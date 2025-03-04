@@ -27,7 +27,7 @@
   
   .options-container {
     display: grid;
-    grid-template-columns: repeat(2, 1fr); /* Dos columnas */
+    flex-direction: column;
     gap: 15px;
     justify-content: center;
     margin: 0 auto;
@@ -40,7 +40,7 @@
     padding: 22px;
     font-size: 20px;
     cursor: pointer;
-    border-radius: 5px;
+    border-radius: 100px;
     max-width: 600px;
     transition: background 0.3s ease;
   }
@@ -56,12 +56,12 @@
   }
   
   .option:nth-child(3) {
-    background-color: #00a794;
+    background-color: #9c00a7;
     color: white;
   }
   
   .option:nth-child(4) {
-    background-color: #ed8836;
+    background-color: #ed36b0;
     color: white;
   }
   

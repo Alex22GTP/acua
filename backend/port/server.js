@@ -39,3 +39,28 @@ app.get("/test-db", async (req, res) => {
     }
   });
   
+
+
+  const multer = require("multer");
+
+// Configurar multer para manejar imágenes en memoria
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+
+app.post("/subir-imagen-prueba", upload.single("imagen"), async (req, res) => {
+  try {
+    const imagenBuffer = req.file.buffer; // Obtener la imagen en binario
+    const tipo = req.file.mimetype; // Tipo de imagen (ej. 'image/jpeg')
+    const nombre = req.file.originalname; // Nombre original del archivo
+
+    await pool.query(
+      "INSERT INTO imagenes_prueba (imagen, tipo, nombre) VALUES ($1, $2, $3)",
+      [imagenBuffer, tipo, nombre]
+    );
+
+    res.json({ success: true, message: "Imagen subida correctamente" });
+  } catch (error) {
+    console.error("Error al subir la imagen:", error);
+    res.status(500).json({ success: false, message: "Error al subir la imagen" });
+  }
+});

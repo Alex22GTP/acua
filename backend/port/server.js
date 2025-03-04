@@ -19,6 +19,10 @@ const pool = new Pool({
 app.use(cors());
 app.use(express.json());
 
+app.use(cors({ origin: "http://localhost:3000" }));
+
+
+
 // Ruta de prueba
 app.get("/", (req, res) => {
   res.send("¡Servidor backend funcionando!");
@@ -62,5 +66,29 @@ app.post("/subir-imagen-prueba", upload.single("imagen"), async (req, res) => {
   } catch (error) {
     console.error("Error al subir la imagen:", error);
     res.status(500).json({ success: false, message: "Error al subir la imagen" });
+  }
+});
+
+app.get("/imagen/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log(`🖼️ Solicitando imagen con ID: ${id}`); // 📌 Debug
+
+    const result = await pool.query("SELECT imagen FROM imagenes_prueba WHERE id = $1", [id]);
+
+    if (result.rows.length === 0) {
+      console.error("❌ Imagen no encontrada en la BD");
+      return res.status(404).json({ error: "Imagen no encontrada" });
+    }
+
+    const imagenBuffer = result.rows[0].imagen;
+
+    res.setHeader("Content-Type", "image/jpeg"); // Ajusta según el tipo de imagen
+    res.send(imagenBuffer);
+    console.log("✅ Imagen enviada correctamente");
+
+  } catch (error) {
+    console.error("🚨 Error al obtener la imagen:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 });

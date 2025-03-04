@@ -1,22 +1,24 @@
 import { useState, useEffect } from "react";
 
 const MostrarImagen = ({ id }) => {
-  const [imagenUrl, setImagenUrl] = useState("");
+  const [imagenUrl, setImagenUrl] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!id) return;
-
-    const url = `http://localhost:5000/imagen/${id}`;
-    console.log(`🔎 Buscando imagen en: ${url}`); // 📌 Debug
-
-    fetch(url)
+    const fixedId = id || 1; // 🔴 Usa ID 1 si el id no es válido
+  
+    console.log("📸 ID recibido:", fixedId);
+  
+    if (!fixedId) {
+      console.log("⚠️ No hay ID proporcionado, deteniendo carga.");
+      return;
+    }
+  
+    fetch(`http://localhost:5000/imagen/${fixedId}`)
       .then((response) => {
         console.log("📥 Respuesta del servidor:", response);
-        if (!response.ok) {
-          throw new Error(`Error HTTP: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
         return response.blob();
       })
       .then((blob) => {
@@ -31,14 +33,17 @@ const MostrarImagen = ({ id }) => {
         setCargando(false);
       });
   }, [id]);
+  
 
-  if (cargando) return <p>Cargando...</p>;
-  if (error) return <p>Error: {error}</p>;
+  console.log("📊 Estado actual:", { cargando, imagenUrl, error });
+
+  if (cargando) return <p>⏳ Cargando...</p>;
+  if (error) return <p>❌ Error: {error}</p>;
 
   return (
     <div>
-      <h3>Imagen cargada desde PostgreSQL</h3>
-      <img src={imagenUrl} alt="Imagen desde BD" width="300" />
+      <h3>✅ Imagen cargada desde PostgreSQL</h3>
+      {imagenUrl && <img src={imagenUrl} alt="Imagen desde BD" width="300" />}
     </div>
   );
 };

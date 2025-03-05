@@ -7,7 +7,6 @@ const Home = () => {
     <div>
       <Navbar /> {/* Aquí se muestra el menú */}
       <Intro /> 
-
     </div>
   );
 };

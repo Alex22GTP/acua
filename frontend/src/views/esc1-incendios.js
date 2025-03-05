@@ -1,34 +1,36 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./esc1-incendios.css";
 import oficinallamas from "../img/oficinallamas.png";
-import tickSound from "../sounds/tick.mp3";  // Sonido por cada segundo
-import alertSound from "../sounds/alert.mp3"; // Sonido al finalizar el tiempo
+import tickSound from "../sounds/tick.mp3";
+import alertSound from "../sounds/alert.mp3";
 
 const EscenarioIncendios1 = () => {
-  const [timeLeft, setTimeLeft] = useState(10);
+  const [timeLeft, setTimeLeft] = useState(10); // Tiempo restante en segundos
   const [showModal, setShowModal] = useState(false);
-  const [tickAudio] = useState(new Audio(tickSound));
-  const [alertAudio] = useState(new Audio(alertSound));
+  const tickAudio = useRef(new Audio(tickSound));
+  const alertAudio = useRef(new Audio(alertSound));
+  const secondHandRef = useRef(null);
 
   useEffect(() => {
-    // Configurar volumen y bucle para el tic-tac
-    tickAudio.loop = false;
-    tickAudio.volume = 1; 
+    let angle = 0; // Ángulo inicial de la manecilla de segundos
 
-    alertAudio.volume = 1; // Volumen de la alerta
-
-    // Iniciar el temporizador
     const timer = setInterval(() => {
       setTimeLeft((prevTime) => {
         if (prevTime > 1) {
-          tickAudio.currentTime = 0;  // Reiniciar sonido
-          tickAudio.play().catch((err) => console.error("Error reproduciendo sonido:", err));
+          tickAudio.current.currentTime = 0;
+          tickAudio.current.play().catch((err) => console.error("Error en sonido:", err));
+
+          // Rotar la manecilla de segundos
+          angle += 360 / 10; // Ajustar para 10 segundos
+          if (secondHandRef.current) {
+            secondHandRef.current.style.transform = `rotate(${angle}deg)`;
+          }
+
           return prevTime - 1;
         } else {
           clearInterval(timer);
-          tickAudio.pause(); // Detener tic-tac
-          tickAudio.currentTime = 0;
-          alertAudio.play();
+          tickAudio.current.pause();
+          alertAudio.current.play();
           setShowModal(true);
           return 0;
         }
@@ -38,20 +40,34 @@ const EscenarioIncendios1 = () => {
     return () => clearInterval(timer);
   }, []);
 
+  const formatTime = (time) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = time % 60;
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  };
+
   return (
     <div className="container">
-      <div className="timer">Tiempo restante: {timeLeft}s</div>
+      {/* Reloj Analógico */}
+      <div className="clock">
+        <div className="clock-face">
+          <div className="hand second-hand" ref={secondHandRef}></div>
+        </div>
+        <div className="second-text">{formatTime(timeLeft)}</div> {/* Mostrar el tiempo restante */}
+      </div>
 
+      {/* Pregunta */}
       <h2 className="question">
-        Imagina que estás en tu oficina trabajando cuando, de repente, suena la alarma de incendio. 
-        Notas que hay humo saliendo de una de las salas cercanas y la situación comienza a volverse caótica.
+        Imagina que estás en tu oficina trabajando cuando, de repente, suena la alarma de incendio. Notas que hay humo saliendo de una de las salas cercanas y la situación comienza a volverse caótica.
       </h2>
 
+      {/* Imagen */}
       <div className="image-container">
         <img src={oficinallamas} alt="Incendio" />
         <h2 className="question1">¿Qué harías en esta situación?</h2>
       </div>
 
+      {/* Opciones */}
       <div className="options-container">
         <button className="option">Mantén la calma, evacúa siguiendo la ruta de emergencia y usa las salidas señalizadas.</button>
         <button className="option">Corre de inmediato hacia el extintor más cercano e intenta apagar el fuego sin evacuar.</button>
@@ -59,6 +75,7 @@ const EscenarioIncendios1 = () => {
         <button className="option">Entra al área incendiada para intentar recuperar objetos importantes antes de evacuar.</button>
       </div>
 
+      {/* Modal que se muestra cuando el tiempo se agota */}
       {showModal && (
         <div className="modal-overlay">
           <div className="modal">

@@ -1,24 +1,27 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./esc1-incendios.css";
-import oficinallamas from "../img/oficinallamas.png";
+import oficinallamas from "../img/cocinaLlamas.png";
 import tickSound from "../sounds/tick.mp3";
 import alertSound from "../sounds/alert.mp3";
 
-const EscenarioIncendios1 = () => {
+const EscenarioIncendios2 = () => {
   const [timeLeft, setTimeLeft] = useState(10); // Tiempo restante en segundos
   const [showModal, setShowModal] = useState(false);
   const [showSoundPermission, setShowSoundPermission] = useState(false); // Para mostrar la alerta de permiso de sonido
   const [timerRunning, setTimerRunning] = useState(false); // Para controlar si el temporizador está corriendo
+  const [soundActivated, setSoundActivated] = useState(false); // Estado que guarda si el sonido ya fue activado
   const tickAudio = useRef(new Audio(tickSound));
   const alertAudio = useRef(new Audio(alertSound));
   const secondHandRef = useRef(null);
 
-  // Intentar reproducir el sonido al cargar la página para detectar si es necesario el permiso
+  // Reproducir sonido de tick y comenzar el temporizador cuando el componente se monte
   useEffect(() => {
     const tryPlaySound = async () => {
       try {
         await tickAudio.current.play();
         tickAudio.current.pause(); // Detenemos el sonido después de probarlo
+        setSoundActivated(true); // Activamos el sonido
+        setTimerRunning(true); // Iniciamos el temporizador
       } catch (err) {
         console.error("Error al intentar reproducir sonido:", err);
         setShowSoundPermission(true); // Si no puede reproducir, mostramos la alerta
@@ -26,8 +29,15 @@ const EscenarioIncendios1 = () => {
     };
 
     tryPlaySound();
+
+    // Limpiar los recursos cuando el componente se desmonte
+    return () => {
+      tickAudio.current.pause(); // Detener el sonido
+      tickAudio.current.currentTime = 0; // Resetear el sonido al inicio
+    };
   }, []);
 
+  // Manejo del temporizador
   useEffect(() => {
     if (!timerRunning) return; // No iniciar el temporizador si no está habilitado
 
@@ -49,8 +59,8 @@ const EscenarioIncendios1 = () => {
           return prevTime - 1;
         } else {
           clearInterval(timer);
-          tickAudio.current.pause();
-          alertAudio.current.play();
+          tickAudio.current.pause(); // Detener el sonido de tick
+          alertAudio.current.play(); // Reproducir sonido de alerta
           setShowModal(true);
           return 0;
         }
@@ -70,6 +80,7 @@ const EscenarioIncendios1 = () => {
     setShowSoundPermission(false);
     try {
       tickAudio.current.play().catch((err) => console.error("Error al reproducir sonido:", err));
+      setSoundActivated(true); // Marcar que el sonido fue activado
       setTimerRunning(true); // Iniciar el temporizador después de que el usuario active el sonido
     } catch (err) {
       console.error("Error al intentar activar sonido:", err);
@@ -88,7 +99,7 @@ const EscenarioIncendios1 = () => {
 
       {/* Pregunta */}
       <h2 className="question">
-        Imagina que estás en tu oficina trabajando cuando, de repente, suena la alarma de incendio. Notas que hay humo saliendo de una de las salas cercanas y la situación comienza a volverse caótica.
+        Estás en tu hogar y, de repente, un olor a quemado te alerta. Al investigar, descubres que hay fuego en la cocina debido a un aceite que se ha derramado y hay fuego en la estufa.
       </h2>
 
       {/* Imagen */}
@@ -99,10 +110,10 @@ const EscenarioIncendios1 = () => {
 
       {/* Opciones */}
       <div className="options-container">
-        <button className="option">Mantén la calma, evacúa siguiendo la ruta de emergencia y usa las salidas señalizadas.</button>
-        <button className="option">Corre de inmediato hacia el extintor más cercano e intenta apagar el fuego sin evacuar.</button>
-        <button className="option">Cierra con llave la oficina para evitar que el fuego se propague y espera a que lleguen los bomberos.</button>
-        <button className="option">Entra al área incendiada para intentar recuperar objetos importantes antes de evacuar.</button>
+        <button className="option">Intenta sofocar las llamas con un trapo mojado o una toalla.</button>
+        <button className="option">Abre la ventana de la cocina para dejar salir el humo.</button>
+        <button className="option">Apaga el fuego utilizando una tapa o una olla para cubrir la sartén en llamas y cortar el suministro de oxígeno.</button>
+        <button className="option">Echar agua sobre el fuego para apagarlo rápidamente.</button>
       </div>
 
       {/* Modal que se muestra cuando el tiempo se agota */}
@@ -119,7 +130,7 @@ const EscenarioIncendios1 = () => {
       )}
 
       {/* Modal para solicitar permiso de sonido */}
-      {showSoundPermission && (
+      {showSoundPermission && !soundActivated && (
         <div className="modal-overlay">
           <div className="modal">
             <h2>🔊 Permiso de sonido</h2>
@@ -134,4 +145,4 @@ const EscenarioIncendios1 = () => {
   );
 };
 
-export default EscenarioIncendios1;
+export default EscenarioIncendios2;

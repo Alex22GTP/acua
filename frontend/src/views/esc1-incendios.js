@@ -7,16 +7,36 @@ import alertSound from "../sounds/alert.mp3";
 const EscenarioIncendios1 = () => {
   const [timeLeft, setTimeLeft] = useState(10); // Tiempo restante en segundos
   const [showModal, setShowModal] = useState(false);
+  const [showSoundPermission, setShowSoundPermission] = useState(false); // Para mostrar la alerta de permiso de sonido
+  const [timerRunning, setTimerRunning] = useState(false); // Para controlar si el temporizador está corriendo
   const tickAudio = useRef(new Audio(tickSound));
   const alertAudio = useRef(new Audio(alertSound));
   const secondHandRef = useRef(null);
 
+  // Intentar reproducir el sonido al cargar la página para detectar si es necesario el permiso
   useEffect(() => {
+    const tryPlaySound = async () => {
+      try {
+        await tickAudio.current.play();
+        tickAudio.current.pause(); // Detenemos el sonido después de probarlo
+      } catch (err) {
+        console.error("Error al intentar reproducir sonido:", err);
+        setShowSoundPermission(true); // Si no puede reproducir, mostramos la alerta
+      }
+    };
+
+    tryPlaySound();
+  }, []);
+
+  useEffect(() => {
+    if (!timerRunning) return; // No iniciar el temporizador si no está habilitado
+
     let angle = 0; // Ángulo inicial de la manecilla de segundos
 
     const timer = setInterval(() => {
       setTimeLeft((prevTime) => {
         if (prevTime > 1) {
+          // Reproducir el sonido de tick
           tickAudio.current.currentTime = 0;
           tickAudio.current.play().catch((err) => console.error("Error en sonido:", err));
 
@@ -38,12 +58,22 @@ const EscenarioIncendios1 = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [timerRunning]);
 
   const formatTime = (time) => {
     const minutes = Math.floor(time / 60);
     const seconds = time % 60;
     return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  };
+
+  const handleSoundPermission = () => {
+    setShowSoundPermission(false);
+    try {
+      tickAudio.current.play().catch((err) => console.error("Error al reproducir sonido:", err));
+      setTimerRunning(true); // Iniciar el temporizador después de que el usuario active el sonido
+    } catch (err) {
+      console.error("Error al intentar activar sonido:", err);
+    }
   };
 
   return (
@@ -83,6 +113,19 @@ const EscenarioIncendios1 = () => {
             <p>Debes actuar rápido en una situación de emergencia.</p>
             <button onClick={() => setShowModal(false)} className="modal-button">
               Aceptar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para solicitar permiso de sonido */}
+      {showSoundPermission && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h2>🔊 Permiso de sonido</h2>
+            <p>Esta aplicación requiere permiso para activar el sonido. ¿Deseas activarlo?</p>
+            <button onClick={handleSoundPermission} className="modal-button">
+              Activar sonido
             </button>
           </div>
         </div>

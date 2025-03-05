@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion"; // Importar Framer Motion
 import "./esc1-incendios.css";
 import oficinallamas from "../img/cocinaLlamas.png";
 import tickSound from "../sounds/tick.mp3";
 import alertSound from "../sounds/alert.mp3";
 
-const EscenarioIncendios2 = () => {
+const EscenarioIncendios2 = ({ onNextScenario }) => {
   const [timeLeft, setTimeLeft] = useState(10); // Tiempo restante en segundos
   const [showModal, setShowModal] = useState(false);
   const [showSoundPermission, setShowSoundPermission] = useState(false); // Para mostrar la alerta de permiso de sonido
@@ -88,7 +89,14 @@ const EscenarioIncendios2 = () => {
   };
 
   return (
-    <div className="container">
+    <AnimatePresence>
+    <motion.div
+      className="container"
+      initial={{ opacity: 0, x: 50 }} // Inicia desde la derecha con opacidad 0
+      animate={{ opacity: 1, x: 0 }} // Se hace visible y se mueve a su posición normal
+      exit={{ opacity: 0, x: -50 }} // Se desvanece y se desliza hacia la izquierda
+      transition={{ duration: 0.5 }} // Duración de la animación
+    >
       {/* Reloj Analógico */}
       <div className="clock">
         <div className="clock-face">
@@ -141,7 +149,8 @@ const EscenarioIncendios2 = () => {
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
+    </AnimatePresence>
   );
 };
 

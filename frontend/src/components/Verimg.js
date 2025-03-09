@@ -1,51 +1,57 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 
-const MostrarImagen = ({ id }) => {
-  const [imagenUrl, setImagenUrl] = useState(null);
+const MostrarCatalogos = () => {
+  const [catalogos, setCatalogos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fixedId = id || 1; // 🔴 Usa ID 1 si el id no es válido
-  
-    console.log("📸 ID recibido:", fixedId);
-  
-    if (!fixedId) {
-      console.log("⚠️ No hay ID proporcionado, deteniendo carga.");
-      return;
-    }
-  
-    fetch(`http://localhost:5000/imagen/${fixedId}`)
+    // Hacer la solicitud al backend
+    fetch("http://localhost:5000/api/getCategories")
       .then((response) => {
-        console.log("📥 Respuesta del servidor:", response);
-        if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-        return response.blob();
+        if (!response.ok) {
+          throw new Error("Error en la respuesta del servidor");
+        }
+        return response.json(); // Extraer los datos JSON
       })
-      .then((blob) => {
-        const imgURL = URL.createObjectURL(blob);
-        console.log("🎨 Imagen convertida en URL:", imgURL);
-        setImagenUrl(imgURL);
+      .then((data) => {
+        console.log("📥 Respuesta del servidor:", data);
+        setCatalogos(data); // Guardar los datos en el estado
         setCargando(false);
       })
       .catch((error) => {
-        console.error("🚨 Error al cargar la imagen:", error);
+        console.error("🚨 Error al cargar los datos:", error);
         setError(error.message);
         setCargando(false);
       });
-  }, [id]);
-  
+  }, []);
 
-  console.log("📊 Estado actual:", { cargando, imagenUrl, error });
-
-  if (cargando) return <p>⏳ Cargando...</p>;
-  if (error) return <p>❌ Error: {error}</p>;
+  if (cargando) return <div>Cargando...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <div>
-      <h3>✅ Imagen cargada desde PostgreSQL</h3>
-      {imagenUrl && <img src={imagenUrl} alt="Imagen desde BD" width="300" />}
+      <h1>Catálogos</h1>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "20px" }}>
+        {catalogos.map((catalogo) => (
+          <div key={catalogo.id_catalogo} style={{ border: "1px solid #ccc", padding: "10px", borderRadius: "8px" }}>
+            <h2>{catalogo.nombre}</h2>
+            {catalogo.imagen && (
+              <img
+                src={catalogo.imagen}
+                alt={`Imagen de ${catalogo.nombre}`}
+                style={{ maxWidth: "100%", height: "auto", borderRadius: "8px" }}
+                onError={(e) => {
+                  console.error("Error al cargar la imagen:", e);
+                  e.target.style.display = "none"; // Oculta la imagen si hay un error
+                }}
+              />
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
 
-export default MostrarImagen;
+export default MostrarCatalogos;

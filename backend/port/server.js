@@ -77,11 +77,30 @@ app.get("/imagen/:id", async (req, res) => {
 
 
 // Ruta para obtener las categorías
+// Ruta para obtener todas las categorías
 app.get("/api/getCategories", async (req, res) => {
   try {
     const result = await pool.query('SELECT id_catalogo, nombre, imagen FROM Catalogos');
-    console.log(result.rows); // Verifica si los datos están correctamente obtenidos
-    res.json(result.rows);
+    
+    // Convertir las imágenes a base64
+    const catalogos = result.rows.map((catalogo) => {
+      const imagenBuffer = catalogo.imagen; // Esto es un Buffer
+      const base64Image = imagenBuffer.toString('base64'); // Convierte el Buffer a base64
+      return {
+        id_catalogo: catalogo.id_catalogo,
+        nombre: catalogo.nombre,
+        imagen: `data:image/png;base64,${base64Image}` // Cambia a 'image/png' si es necesario
+      };
+    });
+
+    // Log simplificado
+    console.log("✅ Datos de la tabla Catalogos enviados:");
+    catalogos.forEach((catalogo) => {
+      console.log(`- ID: ${catalogo.id_catalogo}, Nombre: ${catalogo.nombre}`);
+      console.log(`  Imagen (primeros 50 caracteres): ${catalogo.imagen.substring(0, 50)}...`);
+    });
+
+    res.json(catalogos); // Envía los datos con las imágenes en base64
   } catch (error) {
     console.error('Error al obtener las categorías:', error);
     res.status(500).json({ success: false, message: 'Error al obtener las categorías' });

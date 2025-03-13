@@ -96,8 +96,7 @@ app.get("/api/getCategories", async (req, res) => {
     // Log simplificado
     console.log("✅ Datos de la tabla Catalogos enviados:");
     catalogos.forEach((catalogo) => {
-      console.log(`- ID: ${catalogo.id_catalogo}, Nombre: ${catalogo.nombre}`);
-      console.log(`  Imagen (primeros 50 caracteres): ${catalogo.imagen.substring(0, 50)}...`);
+    
     });
 
     res.json(catalogos); // Envía los datos con las imágenes en base64
@@ -124,5 +123,78 @@ app.post("/api/subir-categoria", upload.single("imagen"), async (req, res) => {
   } catch (error) {
     console.error("Error al subir la categoría:", error);
     res.status(500).json({ success: false, message: "Error al subir la categoría" });
+  }
+});
+
+
+
+const bcrypt = require("bcrypt");
+
+app.post("/api/register", async (req, res) => {
+  const { nombre, apellido_paterno, apellido_materno, email, password, id_rol } = req.body;
+  console.log("Datos recibidos:", req.body);
+
+  try {
+    // Verificar si el correo ya existe
+    const emailCheck = await pool.query("SELECT id_usuario FROM usuario WHERE correo = $1", [email]);
+    console.log("Resultado de la verificación de correo:", emailCheck.rows);
+
+    if (emailCheck.rows.length > 0) {
+      return res.status(400).json({ message: "El correo ya está registrado" });
+    }
+
+    // Verificar si el rol existe
+    const rolCheck = await pool.query("SELECT id_rol FROM rol WHERE id_rol = $1", [id_rol]);
+    console.log("Resultado de la verificación de rol:", rolCheck.rows);
+
+    if (rolCheck.rows.length === 0) {
+      return res.status(400).json({ message: "El rol especificado no existe" });
+    }
+
+    // Hashear la contraseña
+    const hashedPassword = await bcrypt.hash(password, 10);
+    console.log("Contraseña hasheada:", hashedPassword);
+
+    // Insertar usuario en la base de datos y obtener el ID del nuevo usuario
+    const insertResult = await pool.query(
+      "INSERT INTO usuario (nombre, apellido_paterno, apellido_materno, correo, contraseña, id_rol) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id_usuario",
+      [nombre, apellido_paterno, apellido_materno, email, hashedPassword, id_rol]
+    );
+    console.log("Resultado de la inserción:", insertResult.rows);
+
+    const userId = insertResult.rows[0].id_usuario;
+    res.json({ success: true, message: "Usuario registrado exitosamente", userId });
+  } catch (error) {
+    console.error("Error en el registro:", error);
+    res.status(500).json({ message: "Error en el servidor" });
+  }
+});
+
+
+
+
+app.post("/api/login", async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    // Buscar usuario en la BD
+    const result = await pool.query("SELECT id_usuario, correo, contraseña FROM usuario WHERE correo = $1", [email]);
+
+    if (result.rows.length === 0) {
+      return res.status(400).json({ message: "Correo o contraseña incorrectos" });
+    }
+
+    const user = result.rows[0];
+
+    // Verificar contraseña
+    const passwordMatch = await bcrypt.compare(password, user.contraseña);
+    if (!passwordMatch) {
+      return res.status(400).json({ message: "Correo o contraseña incorrectos" });
+    }
+
+    res.json({ success: true, message: "Inicio de sesión exitoso", userId: user.id_usuario });
+  } catch (error) {
+    console.error("Error en el login:", error);
+    res.status(500).json({ message: "Error en el servidor" });
   }
 });

@@ -37,7 +37,6 @@ export default function Auth() {
 
           setModalMessage("Inicio de sesión exitoso");
           setShowModal(true);
-          console.log("Modal mostrado - Estado:", true); // Log cuando se muestra el modal
 
           // Redirección según el rol
           setTimeout(() => {
@@ -50,18 +49,15 @@ export default function Auth() {
         } else {
           setModalMessage(data.message || "Credenciales incorrectas");
           setShowModal(true);
-          console.log("Modal mostrado - Estado:", true); // Log cuando se muestra el modal
         }
       } catch (error) {
         setModalMessage("Error al conectar con el servidor");
         setShowModal(true);
-        console.log("Modal mostrado - Estado:", true); // Log cuando se muestra el modal
       }
     } else {
       if (formData.password !== formData.confirmPassword) {
         setModalMessage("Las contraseñas no coinciden");
         setShowModal(true);
-        console.log("Modal mostrado - Estado:", true); // Log cuando se muestra el modal
         return;
       }
       try {
@@ -77,17 +73,14 @@ export default function Auth() {
         if (response.ok) {
           setModalMessage("Registro exitoso");
           setShowModal(true);
-          console.log("Modal mostrado - Estado:", true); // Log cuando se muestra el modal
-          setTimeout(() => navigate("/home"), 2000);
+          setTimeout(() => navigate("/"), 2000);
         } else {
           setModalMessage(data.message || "Error en el registro");
           setShowModal(true);
-          console.log("Modal mostrado - Estado:", true); // Log cuando se muestra el modal
         }
       } catch (error) {
         setModalMessage("Error al conectar con el servidor");
         setShowModal(true);
-        console.log("Modal mostrado - Estado:", true); // Log cuando se muestra el modal
       }
     }
   };
@@ -119,12 +112,12 @@ export default function Auth() {
           </div>
           <div className="input-group">
             <label>Contraseña</label>
-            <input type="password" name="password" value={formData.password} onChange={handleChange} required />
+            <input type="password" name="password" value={formData.password} onChange={handleChange} required autocomplete="current-password" />
           </div>
           {!isLogin && (
             <div className="input-group">
               <label>Confirmar Contraseña</label>
-              <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required />
+              <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required autocomplete="new-password" />
             </div>
           )}
           <button type="submit" className="auth-button">
@@ -137,17 +130,11 @@ export default function Auth() {
       </div>
 
       {/* Modal */}
-      {console.log("Estado del modal:", showModal)} {/* Log antes de renderizar el modal */}
       {showModal && (
         <div className={`modal-overlay ${showModal ? "active" : ""}`}>
           <div className="modal-box">
             <p>{modalMessage}</p>
-            <button onClick={() => {
-              setShowModal(false);
-              console.log("Modal ocultado - Estado:", false); // Log cuando se oculta el modal
-            }}>
-              Cerrar
-            </button>
+            <button onClick={() => setShowModal(false)}>Cerrar</button>
           </div>
         </div>
       )}

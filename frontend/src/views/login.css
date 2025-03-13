@@ -90,8 +90,80 @@
   }
   
 
-/* Estilos para el modal */
-/* Estilos para el modal */
+/* Estilos base del modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7); /* Fondo semitransparente más oscuro */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Asegura que el modal esté por encima de todo */
+    opacity: 0; /* Inicialmente invisible */
+    visibility: hidden; /* Inicialmente oculto */
+    transition: opacity 0.5s ease, visibility 0.5s ease; /* Transición suave */
+  }
+  
+  /* Cuando el modal está activo */
+  .modal-overlay.active {
+    opacity: 1; /* Visible */
+    visibility: visible; /* Mostrar */
+  }
+  
+  /* Estilos de la caja del modal */
+  .modal-box {
+    background-color: #ffffff; /* Fondo blanco */
+    padding: 30px;
+    border-radius: 15px; /* Bordes más redondeados */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); /* Sombra más pronunciada */
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    transform: translateY(-30px); /* Inicialmente desplazado hacia arriba */
+    opacity: 0; /* Inicialmente invisible */
+    transition: transform 0.5s ease, opacity 0.5s ease; /* Transición suave */
+  }
+  
+  /* Cuando el modal está activo */
+  .modal-overlay.active .modal-box {
+    transform: translateY(0); /* Vuelve a su posición original */
+    opacity: 1; /* Visible */
+  }
+  
+  /* Estilos del texto del modal */
+  .modal-box p {
+    font-size: 18px;
+    margin-bottom: 25px;
+    color: #333333; /* Color de texto oscuro */
+    font-weight: 500; /* Texto un poco más grueso */
+  }
+  
+  /* Estilos del botón de cerrar */
+  .modal-box button {
+    background-color: #007bff; /* Color azul moderno */
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px; /* Bordes redondeados */
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600; /* Texto más grueso */
+    transition: background-color 0.3s ease, transform 0.3s ease; /* Transición suave */
+  }
+  
+  /* Efecto hover para el botón de cerrar */
+  .modal-box button:hover {
+    background-color: #0056b3; /* Color azul más oscuro al pasar el mouse */
+    transform: scale(1.05); /* Ligero aumento de tamaño al pasar el mouse */
+  }
+  
+  /* Efecto activo para el botón de cerrar */
+  .modal-box button:active {
+    transform: scale(0.95); /* Ligera reducción de tamaño al hacer clic */
+  }/* Estilos base del modal */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -103,16 +175,18 @@
     justify-content: center;
     align-items: center;
     z-index: 1000; /* Asegura que el modal esté por encima de todo */
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 1.9s ease, visibility 1.9s ease;
+    opacity: 0; /* Inicialmente invisible */
+    visibility: hidden; /* Inicialmente oculto */
+    transition: opacity 0.9s ease, visibility 0.9s ease; /* Transición suave */
   }
   
+  /* Cuando el modal está activo */
   .modal-overlay.active {
-    opacity: 1;
-    visibility: visible;
+    opacity: 1; /* Visible */
+    visibility: visible; /* Mostrar */
   }
   
+  /* Estilos de la caja del modal */
   .modal-box {
     background-color: white;
     padding: 20px;
@@ -121,33 +195,13 @@
     max-width: 400px;
     width: 90%;
     text-align: center;
-    transform: translateY(-20px);
-    opacity: 0;
-    transition: transform 1.9s ease, opacity 1.9s ease;
+    transform: translateY(-20px); /* Inicialmente desplazado hacia arriba */
+    opacity: 0; /* Inicialmente invisible */
+    transition: transform 0.9s ease, opacity 0.9s ease; /* Transición suave */
   }
   
+  /* Cuando el modal está activo */
   .modal-overlay.active .modal-box {
-    transform: translateY(0);
-    opacity: 1;
-  }
-  
-  .modal-box p {
-    font-size: 18px;
-    margin-bottom: 20px;
-    color: #333;
-  }
-  
-  .modal-box button {
-    background-color: #007bff; /* Color azul */
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background-color 1.9s ease;
-  }
-  
-  .modal-box button:hover {
-    background-color: #0056b3; /* Color azul más oscuro al pasar el mouse */
+    transform: translateY(0); /* Vuelve a su posición original */
+    opacity: 1; /* Visible */
   }

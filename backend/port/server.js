@@ -236,3 +236,90 @@ app.post("/api/login", async (req, res) => {
     res.status(500).json({ message: "Error en el servidor" });
   }
 });
+
+
+app.put("/api/editar-perfil/:userId", async (req, res) => {
+  const { userId } = req.params;
+  const { nombre, apellido_paterno, apellido_materno, correo, contraseña } = req.body;
+
+  try {
+      const hashedPassword = await bcrypt.hash(contraseña, 10);
+      await pool.query(
+          "UPDATE Usuario SET nombre = $1, apellido_paterno = $2, apellido_materno = $3, correo = $4, contraseña = $5 WHERE id_usuario = $6",
+          [nombre, apellido_paterno, apellido_materno, correo, hashedPassword, userId]
+      );
+      res.json({ success: true, message: "Perfil actualizado correctamente" });
+  } catch (error) {
+      console.error("Error al editar perfil:", error);
+      res.status(500).json({ message: "Error en el servidor" });
+  }
+});
+
+
+app.get("/api/estadisticas/:userId", async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+      // Obtener el número de escenarios resueltos correctamente
+      const result = await pool.query(
+          "SELECT COUNT(*) AS correctos FROM Escenarios_resultados WHERE id_usuario = $1 AND resultado = true",
+          [userId]
+      );
+
+      // Obtener el número total de intentos
+      const totalIntentos = await pool.query(
+          "SELECT COUNT(*) AS total FROM Escenarios_resultados WHERE id_usuario = $1",
+          [userId]
+      );
+
+      res.json({
+          correctos: result.rows[0].correctos,
+          total: totalIntentos.rows[0].total
+      });
+  } catch (error) {
+      console.error("Error al obtener estadísticas:", error);
+      res.status(500).json({ message: "Error en el servidor" });
+  }
+});
+
+app.post("/api/guardar-respuesta", async (req, res) => {
+  const { userId, id_escenario, id_opcion } = req.body;
+
+  try {
+      // Verificar si la opción seleccionada es correcta
+      const opcionCorrecta = await pool.query(
+          "SELECT solucion FROM Opciones WHERE id_opcion = $1",
+          [id_opcion]
+      );
+
+      // Guardar el resultado en Escenarios_resultados
+      await pool.query(
+          "INSERT INTO Escenarios_resultados (id_usuario, id_escenario, id_opcion, resultado, intento) VALUES ($1, $2, $3, $4, 1)",
+          [userId, id_escenario, id_opcion, opcionCorrecta.rows[0].solucion]
+      );
+
+      res.json({ success: true, message: "Respuesta guardada correctamente" });
+  } catch (error) {
+      console.error("Error al guardar respuesta:", error);
+      res.status(500).json({ message: "Error en el servidor" });
+  }
+});
+
+app.get("/api/respuestas/:userId", async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+      const result = await pool.query(
+          "SELECT e.titulo, o.descripcion, er.resultado, er.fecha " +
+          "FROM Escenarios_resultados er " +
+          "JOIN Escenarios e ON er.id_escenario = e.id_escenario " +
+          "JOIN Opciones o ON er.id_opcion = o.id_opcion " +
+          "WHERE er.id_usuario = $1",
+          [userId]
+      );
+      res.json(result.rows);
+  } catch (error) {
+      console.error("Error al obtener respuestas:", error);
+      res.status(500).json({ message: "Error en el servidor" });
+  }
+});

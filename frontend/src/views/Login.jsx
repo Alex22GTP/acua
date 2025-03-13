@@ -129,14 +129,14 @@ export default function Auth() {
         </p>
       </div>
 
-      {showModal && (
-        <div className="modal-overlay">
-          <div className="modal-box">
-            <p>{modalMessage}</p>
-            <button onClick={() => setShowModal(false)}>Cerrar</button>
-          </div>
-        </div>
-      )}
+                    {showModal && (
+                <div className={`modal-overlay ${showModal ? "active" : ""}`}>
+                    <div className="modal-box">
+                    <p>{modalMessage}</p>
+                    <button onClick={() => setShowModal(false)}>Cerrar</button>
+                    </div>
+                </div>
+                )}
     </div>
   );
 }

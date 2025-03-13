@@ -163,7 +163,8 @@ app.get("/escenarios/:id", async (req, res) => {  // Quitar el prefijo /api/
   } catch (error) {
     console.error("Error al obtener el escenario:", error);
     res.status(500).json({ error: "Error del servidor" });
-
+  }
+});
 
 const bcrypt = require("bcrypt");
 

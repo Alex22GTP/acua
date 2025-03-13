@@ -73,7 +73,7 @@ export default function Auth() {
         if (response.ok) {
           setModalMessage("Registro exitoso");
           setShowModal(true);
-          setTimeout(() => navigate("/home"), 2000);
+          setTimeout(() => navigate("/"), 2000);
         } else {
           setModalMessage(data.message || "Error en el registro");
           setShowModal(true);
@@ -129,8 +129,9 @@ export default function Auth() {
         </p>
       </div>
 
+      {/* Modal */}
       {showModal && (
-        <div className="modal-overlay">
+        <div className={`modal-overlay ${showModal ? "active" : ""}`}>
           <div className="modal-box">
             <p>{modalMessage}</p>
             <button onClick={() => setShowModal(false)}>Cerrar</button>

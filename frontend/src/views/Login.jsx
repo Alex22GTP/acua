@@ -15,14 +15,31 @@ export default function Auth() {
   });
   const [modalMessage, setModalMessage] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({});
   const navigate = useNavigate();
 
+  const validateEmail = (email) => {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
+  };
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+
+    // Validación en tiempo real
+    if (name === "email" && !validateEmail(value)) {
+      setErrors({ ...errors, email: "Correo electrónico no válido" });
+    } else {
+      setErrors({ ...errors, email: "" });
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
+
     if (isLogin) {
       try {
         const response = await fetch("http://localhost:5000/api/login", {
@@ -32,13 +49,12 @@ export default function Auth() {
         });
         const data = await response.json();
         if (response.ok) {
-          // Guardar sesión en localStorage
           localStorage.setItem("userId", data.userId);
+          localStorage.setItem("id_rol", data.id_rol);
 
           setModalMessage("Inicio de sesión exitoso");
           setShowModal(true);
 
-          // Redirección según el rol
           setTimeout(() => {
             if (data.id_rol === 1) {
               navigate("/admin");
@@ -61,9 +77,7 @@ export default function Auth() {
         return;
       }
       try {
-        // Eliminar confirmPassword antes de enviar los datos al backend
         const { confirmPassword, ...dataToSend } = formData;
-
         const response = await fetch("http://localhost:5000/api/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -73,6 +87,15 @@ export default function Auth() {
         if (response.ok) {
           setModalMessage("Registro exitoso");
           setShowModal(true);
+          setFormData({
+            nombre: "",
+            apellido_paterno: "",
+            apellido_materno: "",
+            email: "",
+            password: "",
+            confirmPassword: "",
+            id_rol: 2,
+          });
           setTimeout(() => navigate("/"), 2000);
         } else {
           setModalMessage(data.message || "Error en el registro");
@@ -83,6 +106,7 @@ export default function Auth() {
         setShowModal(true);
       }
     }
+    setIsLoading(false);
   };
 
   return (
@@ -109,19 +133,20 @@ export default function Auth() {
           <div className="input-group">
             <label>Correo electrónico</label>
             <input type="email" name="email" value={formData.email} onChange={handleChange} required />
+            {errors.email && <p className="error-message">{errors.email}</p>}
           </div>
           <div className="input-group">
             <label>Contraseña</label>
-            <input type="password" name="password" value={formData.password} onChange={handleChange} required autocomplete="current-password" />
+            <input type="password" name="password" value={formData.password} onChange={handleChange} required autoComplete="current-password" />
           </div>
           {!isLogin && (
             <div className="input-group">
               <label>Confirmar Contraseña</label>
-              <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required autocomplete="new-password" />
+              <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required autoComplete="new-password" />
             </div>
           )}
-          <button type="submit" className="auth-button">
-            {isLogin ? "Iniciar sesión" : "Registrarse"}
+          <button type="submit" className="auth-button" disabled={isLoading}>
+            {isLoading ? "Cargando..." : isLogin ? "Iniciar sesión" : "Registrarse"}
           </button>
         </form>
         <p className="toggle-text" onClick={() => setIsLogin(!isLogin)}>
@@ -129,12 +154,13 @@ export default function Auth() {
         </p>
       </div>
 
-      {/* Modal */}
       {showModal && (
         <div className={`modal-overlay ${showModal ? "active" : ""}`}>
           <div className="modal-box">
             <p>{modalMessage}</p>
-            <button onClick={() => setShowModal(false)}>Cerrar</button>
+            <button className="modal-close-button" onClick={() => setShowModal(false)}>
+              Cerrar
+            </button>
           </div>
         </div>
       )}

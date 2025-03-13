@@ -183,3 +183,11 @@
 .modal-button:hover {
     background: #c72c3b;
 }
+
+/* Título del escenario */
+.scenario-title {
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }

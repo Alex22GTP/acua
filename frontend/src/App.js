@@ -5,6 +5,7 @@ import EscenarioIncendios1 from './views/esc1-incendios';
 import EscenarioIncendios2 from './views/esc2-incendios';
 import Img from './views/Img';
 import Carrucel from './views/Carrucel';
+import Login from './views/Login';
 
 
 
@@ -16,6 +17,7 @@ function App() {
         <Route path="/escenarios/:id_escenario" element={<EscenarioIncendios1 />} />
         <Route path="/escIncendio2" element={<EscenarioIncendios2 />} />
         <Route path="/img" element={<Img />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/carrucel" element={<Carrucel />} />
 
 

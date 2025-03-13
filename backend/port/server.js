@@ -9,14 +9,14 @@ const port = process.env.PORT || 5000;
 
 // Configuración de la base de datos
 const pool = new Pool({
-  user: process.env.DB_USER || "alexis",
+  user: process.env.DB_USER || "postgres",
   host: process.env.DB_HOST || "localhost",
   database: process.env.DB_NAME || "sepreve_bd",
-  password: process.env.DB_PASSWORD || "1379",
+  password: process.env.DB_PASSWORD || "1234",
   port: process.env.DB_PORT || 5432,
 });
 
-app.use(cors());
+
 app.use(express.json());
 app.use(cors({ origin: "http://localhost:3000" }));
 
@@ -124,5 +124,45 @@ app.post("/api/subir-categoria", upload.single("imagen"), async (req, res) => {
   } catch (error) {
     console.error("Error al subir la categoría:", error);
     res.status(500).json({ success: false, message: "Error al subir la categoría" });
+  }
+});
+
+// Ruta para obtener un escenario con sus opciones
+app.get("/escenarios/:id", async (req, res) => {  // Quitar el prefijo /api/
+  const { id } = req.params;
+
+  try {
+    const escenarioQuery = `
+      SELECT e.id_escenario, e.titulo, e.descripcion
+      FROM escenarios e
+      WHERE e.id_escenario = $1
+    `;
+    const opcionesQuery = `
+      SELECT o.id_opcion, o.descripcion, o.solucion, o.retroalimentacion
+      FROM opciones o
+      WHERE o.id_escenario = $1
+    `;
+
+    const escenarioResult = await pool.query(escenarioQuery, [id]);
+    const opcionesResult = await pool.query(opcionesQuery, [id]);
+
+    if (escenarioResult.rows.length === 0) {
+      return res.status(404).json({ error: "Escenario no encontrado" });
+    }
+
+    // Formatear la respuesta según lo que espera el cliente
+    const response = {
+      escenario: {
+        id_escenario: escenarioResult.rows[0].id_escenario,
+        titulo: escenarioResult.rows[0].titulo,
+        descripcion: escenarioResult.rows[0].descripcion
+      },
+      opciones: opcionesResult.rows
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error("Error al obtener el escenario:", error);
+    res.status(500).json({ error: "Error del servidor" });
   }
 });

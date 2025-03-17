@@ -323,3 +323,36 @@ app.get("/api/respuestas/:userId", async (req, res) => {
       res.status(500).json({ message: "Error en el servidor" });
   }
 });
+
+app.get("/api/searchCategories", async (req, res) => {
+  const searchTerm = req.query.term;
+
+  if (!searchTerm) {
+    return res.status(400).json({ error: "El término de búsqueda es requerido" });
+  }
+
+  try {
+    const query = `
+      SELECT id_catalogo, nombre, imagen 
+      FROM Catalogos 
+      WHERE nombre ILIKE $1
+    `;
+    const result = await pool.query(query, [`%${searchTerm}%`]);
+    console.log("Resultados de la consulta:", result.rows); // Verifica los resultados
+
+    const catalogos = result.rows.map((catalogo) => {
+      const imagenBuffer = catalogo.imagen;
+      const base64Image = imagenBuffer.toString('base64');
+      return {
+        id_catalogo: catalogo.id_catalogo,
+        nombre: catalogo.nombre,
+        imagen: `data:image/png;base64,${base64Image}`
+      };
+    });
+
+    res.json(catalogos);
+  } catch (error) {
+    console.error("Error al buscar catálogos:", error);
+    res.status(500).json({ error: "Error al buscar catálogos" });
+  }
+});

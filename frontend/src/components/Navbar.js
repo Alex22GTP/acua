@@ -225,9 +225,9 @@ function Navbar() {
       <NavbarContainer scrolled={scrolled}>
         <div>
           {/* Logo con desplazamiento al inicio */}
-          <Link to="inicio" smooth={true} duration={500}>
-            <Logo src={logo} alt="Logo" />
-          </Link>
+          <Link to="inicio" smooth={true} duration={500} offset={-80}>
+  <Logo src={logo} alt="Logo" />
+</Link>
         </div>
         <IconsContainer>
           {/* Enlace a "¿Quiénes somos?" con animación */}

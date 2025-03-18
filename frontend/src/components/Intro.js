@@ -59,11 +59,11 @@ const ResultItem = styled.div`
 `;
 
 const ResultImage = styled.img`
-  width: 30px; // Tamaño pequeño para la imagen
+  width: 30px;
   height: 30px;
-  border-radius: 50%; // Forma circular
-  margin-right: 10px; // Espacio entre la imagen y el texto
-  object-fit: cover; // Ajustar la imagen sin distorsionar
+  border-radius: 50%;
+  margin-right: 10px;
+  object-fit: cover;
 `;
 
 const ResultText = styled.span`
@@ -97,7 +97,7 @@ function IntroSection() {
 
   return (
     <div>
-      <IntroContainer>
+      <IntroContainer id="inicio"> {/* Agrega el id aquí */}
         <Title>Secrufy</Title>
         <Subtitle>
           Conoce las categorías diseñadas para situaciones realistas en las cuales tendrás que pensar y actuar.
@@ -118,7 +118,7 @@ function IntroSection() {
                   alt={`Imagen de ${catalogo.nombre}`}
                   onError={(e) => {
                     console.error("Error al cargar la imagen:", e);
-                    e.target.style.display = "none"; // Oculta la imagen si hay un error
+                    e.target.style.display = "none";
                   }}
                 />
                 <ResultText>{catalogo.nombre}</ResultText>

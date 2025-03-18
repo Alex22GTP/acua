@@ -12,7 +12,7 @@ const GlobalStyle = createGlobalStyle`
 `;
 
 const NavbarContainer = styled.nav`
-  background-color: ${({ scrolled }) => (scrolled ? "#1d3557" : "#ffffff")}; /* Cambia el color al hacer scroll */
+  background-color: ${({ scrolled }) => (scrolled ? "#1d3557" : "#ffffff")};
   padding: 1rem;
   display: flex;
   justify-content: space-between;
@@ -24,18 +24,7 @@ const NavbarContainer = styled.nav`
   left: 0;
   width: 100%;
   z-index: 1000;
-  transition: background-color 0.3s ease; /* Transición suave para el cambio de color */
-`;
-
-const Logo = styled.img`
-  height: 80px;
-  margin-right: 0.75rem;
-  cursor: pointer; /* Cambia el cursor al pasar sobre el logo */
-  transition: transform 0.3s ease;
-
-  @media (max-width: 768px) {
-    height: 60px;
-  }
+  transition: background-color 0.3s ease;
 `;
 
 const LogoContainer = styled.div`
@@ -44,6 +33,15 @@ const LogoContainer = styled.div`
   gap: 0.75rem;
 `;
 
+const Logo = styled.img`
+  height: 80px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+
+  @media (max-width: 768px) {
+    height: 60px;
+  }
+`;
 
 const LogoText = styled.span`
   font-size: 2rem;
@@ -52,9 +50,8 @@ const LogoText = styled.span`
   font-family: 'Poppins', sans-serif;
   transition: color 0.3s ease;
 
-  // Agregar trazo cuando el texto está en azul (scrolled = false)
-  -webkit-text-stroke: ${({ scrolled }) => (scrolled ? "0px" : "1px #1d3557")}; // Grosor y color del trazo
-  text-stroke: ${({ scrolled }) => (scrolled ? "0px" : "2px #1d3557")}; // Soporte para navegadores modernos
+  -webkit-text-stroke: ${({ scrolled }) => (scrolled ? "0px" : "1px #1d3557")};
+  text-stroke: ${({ scrolled }) => (scrolled ? "0px" : "2px #1d3557")};
 
   @media (max-width: 768px) {
     font-size: 1.5rem;
@@ -81,11 +78,11 @@ const IconButton = styled.button`
   font-size: 2rem;
   cursor: pointer;
   transition: transform 0.3s ease, color 0.3s ease;
-  color: ${({ color }) => color};
+  color: ${({ scrolled }) => (scrolled ? "#a8dadc" : "#1d3557")}; // Cambia el color según el scroll
 
   &:hover {
     transform: scale(1.3);
-    color: #1d3557;
+    color: ${({ scrolled }) => (scrolled ? "#ffffff" : "#1d3557")}; // Cambia el hover según el scroll
   }
 
   @media (max-width: 768px) {
@@ -97,7 +94,7 @@ const DropdownMenu = styled.div`
   position: absolute;
   top: 100%;
   right: 0;
-  background: white;
+  background: ${({ scrolled }) => (scrolled ? "#1d3557" : "#ffffff")}; // Fondo según el scroll
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
   border-radius: 8px;
   overflow: hidden;
@@ -124,7 +121,7 @@ const DropdownItem = styled.button`
   border: none;
   padding: 12px 16px;
   text-align: left;
-  color: #333;
+  color: ${({ scrolled }) => (scrolled ? "#ffffff" : "#333")}; // Color del texto según el scroll
   font-size: 1rem;
   cursor: pointer;
   display: flex;
@@ -133,8 +130,8 @@ const DropdownItem = styled.button`
   transition: background 0.3s ease, color 0.3s ease;
 
   &:hover {
-    background: #f0f0f0;
-    color: #1d3557;
+    background: ${({ scrolled }) => (scrolled ? "#457b9d" : "#f0f0f0")}; // Fondo hover según el scroll
+    color: ${({ scrolled }) => (scrolled ? "#ffffff" : "#1d3557")}; // Color hover según el scroll
   }
 `;
 
@@ -326,25 +323,24 @@ function Navbar() {
 
           {/* Menú de usuario */}
           <IconWrapper>
-            <IconButton color={scrolled ? "#ffffff" : "#1d3557"} onClick={() => toggleMenu("user")}>
-              <MdAccountCircle />
-            </IconButton>
-            <DropdownMenu isOpen={activeMenu === "user"}>
-              <DropdownItem><MdManageAccounts /> Mi Perfil</DropdownItem>
-              <DropdownItem><MdLogout /> Cerrar Sesión</DropdownItem>
-            </DropdownMenu>
-          </IconWrapper>
+  <IconButton scrolled={scrolled} onClick={() => toggleMenu("user")}>
+    <MdAccountCircle />
+  </IconButton>
+  <DropdownMenu isOpen={activeMenu === "user"} scrolled={scrolled}>
+    <DropdownItem scrolled={scrolled}><MdManageAccounts /> Mi Perfil</DropdownItem>
+    <DropdownItem scrolled={scrolled}><MdLogout /> Cerrar Sesión</DropdownItem>
+  </DropdownMenu>
+</IconWrapper>
 
-          {/* Menú de configuración */}
-          <IconWrapper>
-            <IconButton color={scrolled ? "#ffffff" : "#457b9d"} onClick={() => toggleMenu("settings")}>
-              <MdSettings />
-            </IconButton>
-            <DropdownMenu isOpen={activeMenu === "settings"}>
-              <DropdownItem><MdSecurity /> Seguridad</DropdownItem>
-              <DropdownItem><MdHelp /> Soporte</DropdownItem>
-            </DropdownMenu>
-          </IconWrapper>
+<IconWrapper>
+  <IconButton scrolled={scrolled} onClick={() => toggleMenu("settings")}>
+    <MdSettings />
+  </IconButton>
+  <DropdownMenu isOpen={activeMenu === "settings"} scrolled={scrolled}>
+    <DropdownItem scrolled={scrolled}><MdSecurity /> Seguridad</DropdownItem>
+    <DropdownItem scrolled={scrolled}><MdHelp /> Soporte</DropdownItem>
+  </DropdownMenu>
+</IconWrapper>
         </IconsContainer>
 
         {/* Botón de menú móvil */}

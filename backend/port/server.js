@@ -127,12 +127,12 @@ app.post("/api/subir-categoria", upload.single("imagen"), async (req, res) => {
 });
 
 // Ruta para obtener un escenario con sus opciones
-app.get("/escenarios/:id", async (req, res) => {  // Quitar el prefijo /api/
+app.get("/escenarios/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
     const escenarioQuery = `
-      SELECT e.id_escenario, e.titulo, e.descripcion
+      SELECT e.id_escenario, e.titulo, e.descripcion, e.imagen
       FROM escenarios e
       WHERE e.id_escenario = $1
     `;
@@ -149,14 +149,20 @@ app.get("/escenarios/:id", async (req, res) => {  // Quitar el prefijo /api/
       return res.status(404).json({ error: "Escenario no encontrado" });
     }
 
+    // Convertir la imagen BYTEA a base64
+    const imagenBase64 = escenarioResult.rows[0].imagen
+      ? Buffer.from(escenarioResult.rows[0].imagen).toString("base64")
+      : null;
+
     // Formatear la respuesta según lo que espera el cliente
     const response = {
       escenario: {
         id_escenario: escenarioResult.rows[0].id_escenario,
         titulo: escenarioResult.rows[0].titulo,
-        descripcion: escenarioResult.rows[0].descripcion
+        descripcion: escenarioResult.rows[0].descripcion,
+        imagen: imagenBase64 ? `data:image/png;base64,${imagenBase64}` : null, // Devuelve la imagen como data URL
       },
-      opciones: opcionesResult.rows
+      opciones: opcionesResult.rows,
     };
 
     res.json(response);
@@ -284,24 +290,45 @@ app.get("/api/estadisticas/:userId", async (req, res) => {
 
 app.post("/api/guardar-respuesta", async (req, res) => {
   const { userId, id_escenario, id_opcion } = req.body;
+  console.log("Datos recibidos:", { userId, id_escenario, id_opcion });
 
   try {
-      // Verificar si la opción seleccionada es correcta
-      const opcionCorrecta = await pool.query(
-          "SELECT solucion FROM Opciones WHERE id_opcion = $1",
-          [id_opcion]
-      );
+    // Verificar si la opción seleccionada es correcta
+    const opcionCorrecta = await pool.query(
+      "SELECT solucion FROM Opciones WHERE id_opcion = $1",
+      [id_opcion]
+    );
 
-      // Guardar el resultado en Escenarios_resultados
-      await pool.query(
-          "INSERT INTO Escenarios_resultados (id_usuario, id_escenario, id_opcion, resultado, intento) VALUES ($1, $2, $3, $4, 1)",
-          [userId, id_escenario, id_opcion, opcionCorrecta.rows[0].solucion]
-      );
+    const resultado = opcionCorrecta.rows[0]?.solucion ? true : false;
+    console.log("Resultado:", resultado);
 
-      res.json({ success: true, message: "Respuesta guardada correctamente" });
+    // Obtener el último intento del usuario en el escenario actual
+    const ultimoIntento = await pool.query(
+      "SELECT MAX(intento) AS max_intento FROM Escenarios_resultados WHERE id_usuario = $1 AND id_escenario = $2",
+      [userId, id_escenario]
+    );
+
+    const nuevoIntento = (ultimoIntento.rows[0].max_intento || 0) + 1;
+    console.log("Nuevo intento:", nuevoIntento);
+
+    // Guardar el resultado con el intento actualizado
+    await pool.query(
+      "INSERT INTO Escenarios_resultados (id_usuario, id_escenario, id_opcion, resultado, intento) VALUES ($1, $2, $3, $4, $5)",
+      [userId, id_escenario, id_opcion, resultado, nuevoIntento]
+    );
+
+    // Verificar si hay un siguiente escenario
+    const siguienteEscenario = await pool.query(
+      "SELECT id_escenario FROM Escenarios WHERE id_escenario > $1 ORDER BY id_escenario ASC LIMIT 1",
+      [id_escenario]
+    );
+
+    const hasNext = siguienteEscenario.rows.length > 0; // Si hay un siguiente escenario
+
+    res.json({ success: true, message: "Respuesta guardada correctamente", hasNext });
   } catch (error) {
-      console.error("Error al guardar respuesta:", error);
-      res.status(500).json({ message: "Error en el servidor" });
+    console.error("Error al guardar respuesta:", error);
+    res.status(500).json({ message: "Error en el servidor" });
   }
 });
 
@@ -323,3 +350,5 @@ app.get("/api/respuestas/:userId", async (req, res) => {
       res.status(500).json({ message: "Error en el servidor" });
   }
 });
+
+

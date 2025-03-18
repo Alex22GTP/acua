@@ -3,7 +3,7 @@ import styled from "styled-components";
 import { MdAccountCircle, MdSettings, MdLogout, MdHelp, MdManageAccounts, MdSecurity, MdMenu, MdClose } from "react-icons/md";
 import { Link } from "react-scroll"; // Importa Link de react-scroll
 import { motion } from "framer-motion"; // Importa motion de framer-motion
-import logo from "../img/logo.png";
+import logo from "../img/logoss.png";
 import { createGlobalStyle } from 'styled-components';
 
 // Importar la fuente de Google Fonts
@@ -35,6 +35,29 @@ const Logo = styled.img`
 
   @media (max-width: 768px) {
     height: 60px;
+  }
+`;
+
+const LogoContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+`;
+
+
+const LogoText = styled.span`
+  font-size: 2rem;
+  font-weight: 600;
+  color: ${({ scrolled }) => (scrolled ? "#ffffff" : "#1d3557")};
+  font-family: 'Poppins', sans-serif;
+  transition: color 0.3s ease;
+
+  // Agregar trazo cuando el texto está en azul (scrolled = false)
+  -webkit-text-stroke: ${({ scrolled }) => (scrolled ? "0px" : "1px #1d3557")}; // Grosor y color del trazo
+  text-stroke: ${({ scrolled }) => (scrolled ? "0px" : "2px #1d3557")}; // Soporte para navegadores modernos
+
+  @media (max-width: 768px) {
+    font-size: 1.5rem;
   }
 `;
 
@@ -223,12 +246,13 @@ function Navbar() {
     <>
       <GlobalStyle /> {/* Aplica la fuente globalmente */}
       <NavbarContainer scrolled={scrolled}>
-        <div>
-          {/* Logo con desplazamiento al inicio */}
+      <LogoContainer>
           <Link to="inicio" smooth={true} duration={500} offset={-80}>
-  <Logo src={logo} alt="Logo" />
-</Link>
-        </div>
+            <Logo src={logo} alt="Logo" />
+          </Link>
+          <LogoText scrolled={scrolled}>SECRUFY</LogoText>
+        </LogoContainer>
+
                 <IconsContainer>
 
 

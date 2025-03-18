@@ -1,8 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
 import styled from "styled-components";
-import Slider from "react-slick";
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
 
 const IntroContainer = styled.div`
   display: flex;
@@ -38,109 +35,98 @@ const SearchBar = styled.input`
   outline: none;
 `;
 
-const CarouselSection = styled.div`
-  width: 100%;
-  margin-top: 3rem;
+const ResultsContainer = styled.div`
+  margin-top: 20px;
+  max-height: 200px;
+  overflow-y: auto;
+  width: 300px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+`;
+
+const ResultItem = styled.div`
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 2rem;
+  padding: 10px;
+  color: #333;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+
+  &:hover {
+    background: #f1f1f1;
+  }
 `;
 
-const CarouselContainer = styled.div`
-  width: 80%;
-`;
-
-const ImageContainer = styled.div`
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-`;
-
-const Image = styled.img`
-  width: 120px;
-  height: 120px;
+const ResultImage = styled.img`
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
+  margin-right: 10px;
   object-fit: cover;
-  transition: transform 0.3s ease-in-out;
-
-  &:hover {
-    transform: scale(1.1);
-  }
 `;
 
-const Overlay = styled.div`
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  color: white;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  opacity: 0;
-  transition: opacity 0.3s ease-in-out;
-  border-radius: 50%;
-
-  &:hover {
-    opacity: 1;
-  }
+const ResultText = styled.span`
+  font-size: 0.9rem;
 `;
-
-const images = [
-  "https://via.placeholder.com/120",
-  "https://via.placeholder.com/120",
-  "https://via.placeholder.com/120",
-  "https://via.placeholder.com/120",
-  "https://via.placeholder.com/120"
-];
-
-const settings = {
-  dots: true,
-  infinite: true,
-  speed: 500,
-  slidesToShow: 3,
-  slidesToScroll: 1,
-  centerMode: true,
-};
 
 function IntroSection() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [results, setResults] = useState([]);
+
+  const handleSearch = async (e) => {
+    const term = e.target.value;
+    setSearchTerm(term);
+
+    if (term) {
+      try {
+        const response = await fetch(`http://localhost:5000/api/searchCategories?term=${term}`);
+        if (!response.ok) {
+          throw new Error("Error en la respuesta del servidor");
+        }
+        const data = await response.json();
+        setResults(data);
+      } catch (error) {
+        console.error("Error al buscar catálogos:", error);
+        setResults([]);
+      }
+    } else {
+      setResults([]);
+    }
+  };
+
   return (
     <div>
-      <IntroContainer>
+      <IntroContainer id="inicio"> {/* Agrega el id aquí */}
         <Title>Secrufy</Title>
         <Subtitle>
           Conoce las categorías diseñadas para situaciones realistas en las cuales tendrás que pensar y actuar.
         </Subtitle>
-        <SearchBar type="text" placeholder="Buscar..." />
-      </IntroContainer>
-      
-      <CarouselSection>
-        <CarouselContainer>
-          <Slider {...settings}>
-            {images.map((src, index) => (
-              <ImageContainer key={index}>
-                <Image src={src} alt={`Imagen ${index + 1}`} />
-                <Overlay>Imagen {index + 1}</Overlay>
-              </ImageContainer>
-            ))}
-          </Slider>
-        </CarouselContainer>
+        <SearchBar
+          type="text"
+          placeholder="Buscar..."
+          value={searchTerm}
+          onChange={handleSearch}
+        />
 
-        <CarouselContainer>
-          <Slider {...settings}>
-            {images.map((src, index) => (
-              <ImageContainer key={index}>
-                <Image src={src} alt={`Imagen ${index + 6}`} />
-                <Overlay>Imagen {index + 6}</Overlay>
-              </ImageContainer>
+        {results.length > 0 && (
+          <ResultsContainer>
+            {results.map((catalogo) => (
+              <ResultItem key={catalogo.id_catalogo}>
+                <ResultImage
+                  src={catalogo.imagen}
+                  alt={`Imagen de ${catalogo.nombre}`}
+                  onError={(e) => {
+                    console.error("Error al cargar la imagen:", e);
+                    e.target.style.display = "none";
+                  }}
+                />
+                <ResultText>{catalogo.nombre}</ResultText>
+              </ResultItem>
             ))}
-          </Slider>
-        </CarouselContainer>
-      </CarouselSection>
+          </ResultsContainer>
+        )}
+      </IntroContainer>
     </div>
   );
 }

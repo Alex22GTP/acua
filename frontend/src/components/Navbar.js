@@ -229,12 +229,48 @@ function Navbar() {
   <Logo src={logo} alt="Logo" />
 </Link>
         </div>
-        <IconsContainer>
+                <IconsContainer>
+
+
+
+                <MenuItem
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            scrolled={scrolled}
+          >
+            <Link
+              to="inicio"
+              smooth={true}
+              duration={500}
+              offset={-80} // Ajusta el offset si el navbar es fijo
+            >
+              Inicio
+            </Link>
+          </MenuItem>
+
+          {/* Enlace a "Catálogos" con animación */}
+          <CatalogosMenuItem
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            scrolled={scrolled}
+          >
+            <Link
+              to="catalogos"
+              smooth={true}
+              duration={500}
+              offset={-80} // Ajusta el offset si el navbar es fijo
+            >
+              Catálogos
+            </Link>
+          </CatalogosMenuItem>
+
           {/* Enlace a "¿Quiénes somos?" con animación */}
           <MenuItem
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
             scrolled={scrolled}
           >
             <Link
@@ -251,7 +287,7 @@ function Navbar() {
           <MenuItem
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
             scrolled={scrolled}
           >
             <Link
@@ -263,23 +299,6 @@ function Navbar() {
               Nuestros servicios
             </Link>
           </MenuItem>
-
-          {/* Enlace a "Catálogos" con animación */}
-          <CatalogosMenuItem
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            scrolled={scrolled}
-          >
-            <Link
-              to="catalogos"
-              smooth={true}
-              duration={500}
-              offset={-80} // Ajusta el offset si el navbar es fijo
-            >
-              Catálogos
-            </Link>
-          </CatalogosMenuItem>
 
           {/* Menú de usuario */}
           <IconWrapper>

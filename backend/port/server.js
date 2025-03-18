@@ -222,7 +222,10 @@ app.post("/api/login", async (req, res) => {
 
   try {
     // Buscar usuario en la BD
-    const result = await pool.query("SELECT id_usuario, correo, contraseña FROM usuario WHERE correo = $1", [email]);
+    const result = await pool.query(
+      "SELECT id_usuario, nombre, correo, contraseña FROM usuario WHERE correo = $1", 
+      [email]
+    );
 
     if (result.rows.length === 0) {
       return res.status(400).json({ message: "Correo o contraseña incorrectos" });
@@ -236,13 +239,18 @@ app.post("/api/login", async (req, res) => {
       return res.status(400).json({ message: "Correo o contraseña incorrectos" });
     }
 
-    res.json({ success: true, message: "Inicio de sesión exitoso", userId: user.id_usuario });
+    // Devolver el nombre del usuario junto con el userId
+    res.json({ 
+      success: true, 
+      message: "Inicio de sesión exitoso", 
+      userId: user.id_usuario, 
+      nombre: user.nombre // Añadir el nombre del usuario
+    });
   } catch (error) {
     console.error("Error en el login:", error);
     res.status(500).json({ message: "Error en el servidor" });
   }
 });
-
 
 app.put("/api/editar-perfil/:userId", async (req, res) => {
   const { userId } = req.params;

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { MdAccountCircle, MdSettings, MdLogout, MdHelp, MdManageAccounts, MdSecurity, MdMenu, MdClose } from "react-icons/md";
-import { Link } from "react-scroll"; // Importa Link de react-scroll
-import { motion } from "framer-motion"; // Importa motion de framer-motion
+import { Link as ScrollLink } from "react-scroll";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import logo from "../img/logoss.png";
 import { createGlobalStyle } from 'styled-components';
 
@@ -78,11 +79,14 @@ const IconButton = styled.button`
   font-size: 2rem;
   cursor: pointer;
   transition: transform 0.3s ease, color 0.3s ease;
-  color: ${({ scrolled }) => (scrolled ? "#a8dadc" : "#1d3557")}; // Cambia el color según el scroll
+  color: ${({ scrolled }) => (scrolled ? "#a8dadc" : "#1d3557")};
+  display: flex; /* Añadir display flex */
+  align-items: center; /* Alinear verticalmente */
+  gap: 0.5rem; /* Espacio entre el ícono y el nombre */
 
   &:hover {
     transform: scale(1.3);
-    color: ${({ scrolled }) => (scrolled ? "#ffffff" : "#1d3557")}; // Cambia el hover según el scroll
+    color: ${({ scrolled }) => (scrolled ? "#ffffff" : "#1d3557")};
   }
 
   @media (max-width: 768px) {
@@ -94,7 +98,7 @@ const DropdownMenu = styled.div`
   position: absolute;
   top: 100%;
   right: 0;
-  background: ${({ scrolled }) => (scrolled ? "#1d3557" : "#ffffff")}; // Fondo según el scroll
+  background: ${({ scrolled }) => (scrolled ? "#1d3557" : "#ffffff")};
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
   border-radius: 8px;
   overflow: hidden;
@@ -121,7 +125,7 @@ const DropdownItem = styled.button`
   border: none;
   padding: 12px 16px;
   text-align: left;
-  color: ${({ scrolled }) => (scrolled ? "#ffffff" : "#333")}; // Color del texto según el scroll
+  color: ${({ scrolled }) => (scrolled ? "#ffffff" : "#333")};
   font-size: 1rem;
   cursor: pointer;
   display: flex;
@@ -130,8 +134,8 @@ const DropdownItem = styled.button`
   transition: background 0.3s ease, color 0.3s ease;
 
   &:hover {
-    background: ${({ scrolled }) => (scrolled ? "#457b9d" : "#f0f0f0")}; // Fondo hover según el scroll
-    color: ${({ scrolled }) => (scrolled ? "#ffffff" : "#1d3557")}; // Color hover según el scroll
+    background: ${({ scrolled }) => (scrolled ? "#457b9d" : "#f0f0f0")};
+    color: ${({ scrolled }) => (scrolled ? "#ffffff" : "#1d3557")};
   }
 `;
 
@@ -179,18 +183,18 @@ const CloseButton = styled.button`
   cursor: pointer;
 `;
 
-const MenuItem = styled(motion.div)` /* Usamos motion para animar los elementos */
-  color: ${({ scrolled }) => (scrolled ? "#ffffff" : "#333")}; /* Cambia el color del texto al hacer scroll */
+const MenuItem = styled(motion.div)`
+  color: ${({ scrolled }) => (scrolled ? "#ffffff" : "#333")};
   text-decoration: none;
   font-size: 1rem;
   padding: 12px 16px;
   cursor: pointer;
   transition: color 0.3s ease;
   position: relative;
-  font-family: 'Poppins', sans-serif; /* Cambiamos la fuente */
+  font-family: 'Poppins', sans-serif;
 
   &:hover {
-    color: ${({ scrolled }) => (scrolled ? "#a8dadc" : "#1d3557")}; /* Cambia el color del hover al hacer scroll */
+    color: ${({ scrolled }) => (scrolled ? "#a8dadc" : "#1d3557")};
   }
 
   &::after {
@@ -200,7 +204,7 @@ const MenuItem = styled(motion.div)` /* Usamos motion para animar los elementos 
     left: 0;
     width: 100%;
     height: 2px;
-    background-color: ${({ scrolled }) => (scrolled ? "#a8dadc" : "#1d3557")}; /* Cambia el color del subrayado al hacer scroll */
+    background-color: ${({ scrolled }) => (scrolled ? "#a8dadc" : "#1d3557")};
     transform: scaleX(0);
     transform-origin: bottom right;
     transition: transform 0.3s ease;
@@ -213,19 +217,27 @@ const MenuItem = styled(motion.div)` /* Usamos motion para animar los elementos 
 `;
 
 const CatalogosMenuItem = styled(MenuItem)`
-  margin-left: 20px; /* Separación adicional para "Catálogos" */
+  margin-left: 20px;
+`;
+
+const UserName = styled.span`
+  font-size: 1rem;
+  color: ${({ scrolled }) => (scrolled ? "#ffffff" : "#1d3557")};
+  font-family: 'Poppins', sans-serif;
 `;
 
 function Navbar() {
   const [activeMenu, setActiveMenu] = useState(null);
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userName, setUserName] = useState("");
+  const navigate = useNavigate();
 
   const toggleMenu = (menu) => {
     setActiveMenu(activeMenu === menu ? null : menu);
   };
 
-  // Efecto para detectar el scroll
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 50) {
@@ -239,158 +251,158 @@ function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    const userId = localStorage.getItem("userId");
+    const storedUserName = localStorage.getItem("userName"); // Obtener el nombre del usuario
+    if (userId) {
+      setIsLoggedIn(true);
+      setUserName(storedUserName || "Usuario"); // Usar el nombre del usuario o "Usuario" por defecto
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("userId");
+    localStorage.removeItem("userName");
+    setIsLoggedIn(false);
+    setUserName("");
+    navigate("/login");
+  };
+
   return (
     <>
-      <GlobalStyle /> {/* Aplica la fuente globalmente */}
+      <GlobalStyle />
       <NavbarContainer scrolled={scrolled}>
-      <LogoContainer>
-          <Link to="inicio" smooth={true} duration={500} offset={-80}>
+        <LogoContainer>
+          <ScrollLink to="inicio" smooth={true} duration={500} offset={-80}>
             <Logo src={logo} alt="Logo" />
-          </Link>
+          </ScrollLink>
           <LogoText scrolled={scrolled}>SECRUFY</LogoText>
         </LogoContainer>
 
-                <IconsContainer>
-
-
-
-                <MenuItem
+        <IconsContainer>
+          <MenuItem
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
             scrolled={scrolled}
           >
-            <Link
-              to="inicio"
-              smooth={true}
-              duration={500}
-              offset={-80} // Ajusta el offset si el navbar es fijo
-            >
+            <ScrollLink to="inicio" smooth={true} duration={500} offset={-80}>
               Inicio
-            </Link>
+            </ScrollLink>
           </MenuItem>
 
-          {/* Enlace a "Catálogos" con animación */}
           <CatalogosMenuItem
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
             scrolled={scrolled}
           >
-            <Link
-              to="catalogos"
-              smooth={true}
-              duration={500}
-              offset={-80} // Ajusta el offset si el navbar es fijo
-            >
+            <ScrollLink to="catalogos" smooth={true} duration={500} offset={-80}>
               Catálogos
-            </Link>
+            </ScrollLink>
           </CatalogosMenuItem>
 
-          {/* Enlace a "¿Quiénes somos?" con animación */}
           <MenuItem
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
             scrolled={scrolled}
           >
-            <Link
-              to="quienes-somos"
-              smooth={true}
-              duration={500}
-              offset={-80} // Ajusta el offset si el navbar es fijo
-            >
+            <ScrollLink to="quienes-somos" smooth={true} duration={500} offset={-80}>
               ¿Quiénes somos?
-            </Link>
+            </ScrollLink>
           </MenuItem>
 
-          {/* Enlace a "Nuestros servicios" con animación */}
           <MenuItem
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
             scrolled={scrolled}
           >
-            <Link
-              to="servicios"
-              smooth={true}
-              duration={500}
-              offset={-80} // Ajusta el offset si el navbar es fijo
-            >
+            <ScrollLink to="servicios" smooth={true} duration={500} offset={-80}>
               Nuestros servicios
-            </Link>
+            </ScrollLink>
           </MenuItem>
 
-          {/* Menú de usuario */}
-          <IconWrapper>
-  <IconButton scrolled={scrolled} onClick={() => toggleMenu("user")}>
-    <MdAccountCircle />
-  </IconButton>
-  <DropdownMenu isOpen={activeMenu === "user"} scrolled={scrolled}>
-    <DropdownItem scrolled={scrolled}><MdManageAccounts /> Mi Perfil</DropdownItem>
-    <DropdownItem scrolled={scrolled}><MdLogout /> Cerrar Sesión</DropdownItem>
-  </DropdownMenu>
-</IconWrapper>
+          {!isLoggedIn && (
+            <MenuItem
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              scrolled={scrolled}
+            >
+              <RouterLink to="/login" style={{ textDecoration: "none", color: "inherit" }}>
+                Iniciar sesión
+              </RouterLink>
+            </MenuItem>
+          )}
 
-<IconWrapper>
-  <IconButton scrolled={scrolled} onClick={() => toggleMenu("settings")}>
-    <MdSettings />
-  </IconButton>
-  <DropdownMenu isOpen={activeMenu === "settings"} scrolled={scrolled}>
-    <DropdownItem scrolled={scrolled}><MdSecurity /> Seguridad</DropdownItem>
-    <DropdownItem scrolled={scrolled}><MdHelp /> Soporte</DropdownItem>
-  </DropdownMenu>
-</IconWrapper>
+          {isLoggedIn && (
+            <>
+              <IconWrapper>
+                <IconButton scrolled={scrolled} onClick={() => toggleMenu("user")}>
+                  <MdAccountCircle />
+                  {userName && <UserName scrolled={scrolled}>{userName}</UserName>}
+                </IconButton>
+                <DropdownMenu isOpen={activeMenu === "user"} scrolled={scrolled}>
+                  <DropdownItem scrolled={scrolled}><MdManageAccounts /> Mi Perfil</DropdownItem>
+                  <DropdownItem scrolled={scrolled} onClick={handleLogout}><MdLogout /> Cerrar Sesión</DropdownItem>
+                </DropdownMenu>
+              </IconWrapper>
+
+              <IconWrapper>
+                <IconButton scrolled={scrolled} onClick={() => toggleMenu("settings")}>
+                  <MdSettings />
+                </IconButton>
+                <DropdownMenu isOpen={activeMenu === "settings"} scrolled={scrolled}>
+                  <DropdownItem scrolled={scrolled}><MdSecurity /> Seguridad</DropdownItem>
+                  <DropdownItem scrolled={scrolled}><MdHelp /> Soporte</DropdownItem>
+                </DropdownMenu>
+              </IconWrapper>
+            </>
+          )}
         </IconsContainer>
 
-        {/* Botón de menú móvil */}
         <MobileMenuButton onClick={() => setSidebarOpen(true)}>
           <MdMenu />
         </MobileMenuButton>
 
-        {/* Sidebar para móviles */}
         <Sidebar isOpen={isSidebarOpen}>
           <CloseButton onClick={() => setSidebarOpen(false)}>
             <MdClose />
           </CloseButton>
-          {/* Enlaces en el sidebar */}
           <MenuItem>
-            <Link
-              to="quienes-somos"
-              smooth={true}
-              duration={500}
-              offset={-80}
-              onClick={() => setSidebarOpen(false)} // Cierra el sidebar al hacer clic
-            >
+            <ScrollLink to="quienes-somos" smooth={true} duration={500} offset={-80} onClick={() => setSidebarOpen(false)}>
               ¿Quiénes somos?
-            </Link>
+            </ScrollLink>
           </MenuItem>
           <MenuItem>
-            <Link
-              to="servicios"
-              smooth={true}
-              duration={500}
-              offset={-80}
-              onClick={() => setSidebarOpen(false)} // Cierra el sidebar al hacer clic
-            >
+            <ScrollLink to="servicios" smooth={true} duration={500} offset={-80} onClick={() => setSidebarOpen(false)}>
               Nuestros servicios
-            </Link>
+            </ScrollLink>
           </MenuItem>
           <MenuItem>
-            <Link
-              to="catalogos"
-              smooth={true}
-              duration={500}
-              offset={-80}
-              onClick={() => setSidebarOpen(false)} // Cierra el sidebar al hacer clic
-            >
+            <ScrollLink to="catalogos" smooth={true} duration={500} offset={-80} onClick={() => setSidebarOpen(false)}>
               Catálogos
-            </Link>
+            </ScrollLink>
           </MenuItem>
-          <DropdownItem><MdManageAccounts /> Mi Perfil</DropdownItem>
-          <DropdownItem><MdLogout /> Cerrar Sesión</DropdownItem>
-          <DropdownItem><MdSecurity /> Seguridad</DropdownItem>
-          <DropdownItem><MdHelp /> Soporte</DropdownItem>
+
+          {!isLoggedIn && (
+            <MenuItem>
+              <RouterLink to="/login" style={{ textDecoration: "none", color: "inherit" }} onClick={() => setSidebarOpen(false)}>
+                Iniciar sesión
+              </RouterLink>
+            </MenuItem>
+          )}
+
+          {isLoggedIn && (
+            <>
+              <DropdownItem><MdManageAccounts /> Mi Perfil</DropdownItem>
+              <DropdownItem onClick={handleLogout}><MdLogout /> Cerrar Sesión</DropdownItem>
+              <DropdownItem><MdSecurity /> Seguridad</DropdownItem>
+              <DropdownItem><MdHelp /> Soporte</DropdownItem>
+            </>
+          )}
         </Sidebar>
       </NavbarContainer>
     </>

@@ -1,10 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { MdAccountCircle, MdSettings, MdLogout, MdHelp, MdManageAccounts, MdSecurity, MdMenu, MdClose } from "react-icons/md";
+import { Link } from "react-scroll"; // Importa Link de react-scroll
+import { motion } from "framer-motion"; // Importa motion de framer-motion
 import logo from "../img/logo.png";
+import { createGlobalStyle } from 'styled-components';
+
+// Importar la fuente de Google Fonts
+const GlobalStyle = createGlobalStyle`
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+`;
 
 const NavbarContainer = styled.nav`
-  background-color: #ffffff;
+  background-color: ${({ scrolled }) => (scrolled ? "#1d3557" : "#ffffff")}; /* Cambia el color al hacer scroll */
   padding: 1rem;
   display: flex;
   justify-content: space-between;
@@ -16,16 +24,14 @@ const NavbarContainer = styled.nav`
   left: 0;
   width: 100%;
   z-index: 1000;
+  transition: background-color 0.3s ease; /* Transición suave para el cambio de color */
 `;
 
 const Logo = styled.img`
   height: 80px;
   margin-right: 0.75rem;
+  cursor: pointer; /* Cambia el cursor al pasar sobre el logo */
   transition: transform 0.3s ease;
-
-  &:hover {
-    transform: rotate(5deg);
-  }
 
   @media (max-width: 768px) {
     height: 60px;
@@ -153,53 +159,202 @@ const CloseButton = styled.button`
   cursor: pointer;
 `;
 
+const MenuItem = styled(motion.div)` /* Usamos motion para animar los elementos */
+  color: ${({ scrolled }) => (scrolled ? "#ffffff" : "#333")}; /* Cambia el color del texto al hacer scroll */
+  text-decoration: none;
+  font-size: 1rem;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: color 0.3s ease;
+  position: relative;
+  font-family: 'Poppins', sans-serif; /* Cambiamos la fuente */
+
+  &:hover {
+    color: ${({ scrolled }) => (scrolled ? "#a8dadc" : "#1d3557")}; /* Cambia el color del hover al hacer scroll */
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: ${({ scrolled }) => (scrolled ? "#a8dadc" : "#1d3557")}; /* Cambia el color del subrayado al hacer scroll */
+    transform: scaleX(0);
+    transform-origin: bottom right;
+    transition: transform 0.3s ease;
+  }
+
+  &:hover::after {
+    transform: scaleX(1);
+    transform-origin: bottom left;
+  }
+`;
+
+const CatalogosMenuItem = styled(MenuItem)`
+  margin-left: 20px; /* Separación adicional para "Catálogos" */
+`;
+
 function Navbar() {
   const [activeMenu, setActiveMenu] = useState(null);
   const [isSidebarOpen, setSidebarOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   const toggleMenu = (menu) => {
     setActiveMenu(activeMenu === menu ? null : menu);
   };
 
-  return (
-    <NavbarContainer>
-      <div>
-        <Logo src={logo} alt="Logo" />
-      </div>
-      <IconsContainer>
-        <IconWrapper>
-          <IconButton color="#1d3557" onClick={() => toggleMenu("user")}>
-            <MdAccountCircle />
-          </IconButton>
-          <DropdownMenu isOpen={activeMenu === "user"}>
-            <DropdownItem><MdManageAccounts /> Mi Perfil</DropdownItem>
-            <DropdownItem><MdLogout /> Cerrar Sesión</DropdownItem>
-          </DropdownMenu>
-        </IconWrapper>
+  // Efecto para detectar el scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 50) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
+      }
+    };
 
-        <IconWrapper>
-          <IconButton color="#457b9d" onClick={() => toggleMenu("settings")}>
-            <MdSettings />
-          </IconButton>
-          <DropdownMenu isOpen={activeMenu === "settings"}>
-            <DropdownItem><MdSecurity /> Seguridad</DropdownItem>
-            <DropdownItem><MdHelp /> Soporte</DropdownItem>
-          </DropdownMenu>
-        </IconWrapper>
-      </IconsContainer>
-      <MobileMenuButton onClick={() => setSidebarOpen(true)}>
-        <MdMenu />
-      </MobileMenuButton>
-      <Sidebar isOpen={isSidebarOpen}>
-        <CloseButton onClick={() => setSidebarOpen(false)}>
-          <MdClose />
-        </CloseButton>
-        <DropdownItem><MdManageAccounts /> Mi Perfil</DropdownItem>
-        <DropdownItem><MdLogout /> Cerrar Sesión</DropdownItem>
-        <DropdownItem><MdSecurity /> Seguridad</DropdownItem>
-        <DropdownItem><MdHelp /> Soporte</DropdownItem>
-      </Sidebar>
-    </NavbarContainer>
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  return (
+    <>
+      <GlobalStyle /> {/* Aplica la fuente globalmente */}
+      <NavbarContainer scrolled={scrolled}>
+        <div>
+          {/* Logo con desplazamiento al inicio */}
+          <Link to="inicio" smooth={true} duration={500}>
+            <Logo src={logo} alt="Logo" />
+          </Link>
+        </div>
+        <IconsContainer>
+          {/* Enlace a "¿Quiénes somos?" con animación */}
+          <MenuItem
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            scrolled={scrolled}
+          >
+            <Link
+              to="quienes-somos"
+              smooth={true}
+              duration={500}
+              offset={-80} // Ajusta el offset si el navbar es fijo
+            >
+              ¿Quiénes somos?
+            </Link>
+          </MenuItem>
+
+          {/* Enlace a "Nuestros servicios" con animación */}
+          <MenuItem
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            scrolled={scrolled}
+          >
+            <Link
+              to="servicios"
+              smooth={true}
+              duration={500}
+              offset={-80} // Ajusta el offset si el navbar es fijo
+            >
+              Nuestros servicios
+            </Link>
+          </MenuItem>
+
+          {/* Enlace a "Catálogos" con animación */}
+          <CatalogosMenuItem
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            scrolled={scrolled}
+          >
+            <Link
+              to="catalogos"
+              smooth={true}
+              duration={500}
+              offset={-80} // Ajusta el offset si el navbar es fijo
+            >
+              Catálogos
+            </Link>
+          </CatalogosMenuItem>
+
+          {/* Menú de usuario */}
+          <IconWrapper>
+            <IconButton color={scrolled ? "#ffffff" : "#1d3557"} onClick={() => toggleMenu("user")}>
+              <MdAccountCircle />
+            </IconButton>
+            <DropdownMenu isOpen={activeMenu === "user"}>
+              <DropdownItem><MdManageAccounts /> Mi Perfil</DropdownItem>
+              <DropdownItem><MdLogout /> Cerrar Sesión</DropdownItem>
+            </DropdownMenu>
+          </IconWrapper>
+
+          {/* Menú de configuración */}
+          <IconWrapper>
+            <IconButton color={scrolled ? "#ffffff" : "#457b9d"} onClick={() => toggleMenu("settings")}>
+              <MdSettings />
+            </IconButton>
+            <DropdownMenu isOpen={activeMenu === "settings"}>
+              <DropdownItem><MdSecurity /> Seguridad</DropdownItem>
+              <DropdownItem><MdHelp /> Soporte</DropdownItem>
+            </DropdownMenu>
+          </IconWrapper>
+        </IconsContainer>
+
+        {/* Botón de menú móvil */}
+        <MobileMenuButton onClick={() => setSidebarOpen(true)}>
+          <MdMenu />
+        </MobileMenuButton>
+
+        {/* Sidebar para móviles */}
+        <Sidebar isOpen={isSidebarOpen}>
+          <CloseButton onClick={() => setSidebarOpen(false)}>
+            <MdClose />
+          </CloseButton>
+          {/* Enlaces en el sidebar */}
+          <MenuItem>
+            <Link
+              to="quienes-somos"
+              smooth={true}
+              duration={500}
+              offset={-80}
+              onClick={() => setSidebarOpen(false)} // Cierra el sidebar al hacer clic
+            >
+              ¿Quiénes somos?
+            </Link>
+          </MenuItem>
+          <MenuItem>
+            <Link
+              to="servicios"
+              smooth={true}
+              duration={500}
+              offset={-80}
+              onClick={() => setSidebarOpen(false)} // Cierra el sidebar al hacer clic
+            >
+              Nuestros servicios
+            </Link>
+          </MenuItem>
+          <MenuItem>
+            <Link
+              to="catalogos"
+              smooth={true}
+              duration={500}
+              offset={-80}
+              onClick={() => setSidebarOpen(false)} // Cierra el sidebar al hacer clic
+            >
+              Catálogos
+            </Link>
+          </MenuItem>
+          <DropdownItem><MdManageAccounts /> Mi Perfil</DropdownItem>
+          <DropdownItem><MdLogout /> Cerrar Sesión</DropdownItem>
+          <DropdownItem><MdSecurity /> Seguridad</DropdownItem>
+          <DropdownItem><MdHelp /> Soporte</DropdownItem>
+        </Sidebar>
+      </NavbarContainer>
+    </>
   );
 }
 

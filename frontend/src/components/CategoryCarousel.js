@@ -3,7 +3,7 @@ import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import styled from "styled-components";
-import { FaArrowLeft, FaArrowRight } from "react-icons/fa"; // Importar íconos de flechas
+import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 
 // Estilos para el círculo y el efecto hover
 const CircleContainer = styled.div`
@@ -87,6 +87,22 @@ const ArrowButton = styled.button`
   &.next {
     right: -20px;
   }
+`;
+
+const SectionTitle = styled.h1`
+  text-align: center;
+  font-size: 2.5rem;
+  color: #1d3557;
+  margin-bottom: 10px;
+`;
+
+const SectionDescription = styled.p`
+  text-align: center;
+  font-size: 1.1rem;
+  color: #457b9d;
+  max-width: 800px;
+  margin: 0 auto 30px;
+  line-height: 1.6;
 `;
 
 const MostrarCatalogos = () => {
@@ -175,8 +191,12 @@ const MostrarCatalogos = () => {
   const primeros5Catalogos = catalogos.slice(0, 5);
 
   return (
-    <div style={{ padding: "20px", position: "relative" }}>
-      <h1 style={{ textAlign: "center", marginBottom: "20px" }}>Catálogos</h1>
+    <div id="catalogos" style={{ padding: "20px", position: "relative" }}> {/* Asegúrate de que el ID esté aquí */}
+      {/* Título y descripción para "Catálogos" */}
+      <SectionTitle>Catálogos</SectionTitle>
+      <SectionDescription>
+        Explora nuestras categorías diseñadas para ayudarte a prepararte en situaciones de emergencia.
+      </SectionDescription>
 
       {/* Primer carrusel: Todos los catálogos */}
       <Slider {...settings}>
@@ -200,10 +220,13 @@ const MostrarCatalogos = () => {
         ))}
       </Slider>
 
+      {/* Título y descripción para "Primeros 5 Catálogos" */}
+      <SectionTitle style={{ marginTop: "60px" }}>Primeros 5 Catálogos</SectionTitle>
+      <SectionDescription>
+        Estos son los catálogos más populares. ¡Empieza por aquí!
+      </SectionDescription>
+
       {/* Segundo carrusel: Solo los primeros 5 catálogos */}
-      <h2 style={{ textAlign: "center", marginTop: "40px", marginBottom: "20px" }}>
-        Primeros 5 Catálogos
-      </h2>
       <Slider {...settings}>
         {primeros5Catalogos.map((catalogo) => (
           <div key={catalogo.id_catalogo} style={{ padding: "10px" }}>

@@ -10,8 +10,10 @@ const Home = () => {
   return (
     <div>
       <Navbar /> {/* Menú de navegación */}
+      <br/>
       <Intro /> {/* Sección de introducción */}
       <MostrarCatalogos id="catalogos" /> {/* Sección de catálogos */}
+      <br/><br/>
       <QuienesSomos /> {/* Sección "¿Quiénes somos?" */}
       <NuestrosServicios /> {/* Sección "Nuestros servicios" */}
       <Footer /> {/* Pie de página */}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import { MdAccountCircle, MdSettings, MdLogout, MdHelp, MdManageAccounts, MdSecurity, MdMenu, MdClose } from "react-icons/md";
+import { MdAccountCircle, MdSettings, MdLogout, MdHelp, MdManageAccounts, MdSecurity, MdMenu, MdClose,  MdBarChart } from "react-icons/md";
 import { Link as ScrollLink } from "react-scroll";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -345,9 +345,18 @@ function Navbar() {
                   {userName && <UserName scrolled={scrolled}>{userName}</UserName>}
                 </IconButton>
                 <DropdownMenu isOpen={activeMenu === "user"} scrolled={scrolled}>
-                  <DropdownItem scrolled={scrolled}><MdManageAccounts /> Mi Perfil</DropdownItem>
-                  <DropdownItem scrolled={scrolled} onClick={handleLogout}><MdLogout /> Cerrar Sesión</DropdownItem>
-                </DropdownMenu>
+
+                <DropdownItem 
+                scrolled={scrolled} 
+                onClick={() => navigate("/perfil")} // Redirigir a la página de perfil
+              >
+                <MdManageAccounts /> Mi Perfil
+              </DropdownItem>
+
+
+              <DropdownItem scrolled={scrolled}><MdBarChart /> Ver Estadísticas</DropdownItem> {/* Nueva opción */}
+              <DropdownItem scrolled={scrolled} onClick={handleLogout}><MdLogout /> Cerrar Sesión</DropdownItem>
+            </DropdownMenu>
               </IconWrapper>
 
               <IconWrapper>

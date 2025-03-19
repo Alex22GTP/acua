@@ -392,3 +392,119 @@ app.get("/api/searchCategories", async (req, res) => {
     res.status(500).json({ error: "Error al buscar catálogos" });
   }
 });
+
+
+
+// Otras rutas existentes...
+
+// Obtener los datos del usuario
+app.get("/api/user/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      "SELECT nombre, apellido_paterno, apellido_materno, correo FROM usuario WHERE id_usuario = $1",
+      [id]
+    );
+    if (result.rows.length > 0) {
+      res.json(result.rows[0]);
+    } else {
+      res.status(404).json({ message: "Usuario no encontrado" });
+    }
+  } catch (error) {
+    console.error("Error al obtener los datos del usuario:", error);
+    res.status(500).json({ message: "Error en el servidor" });
+  }
+});
+
+// Actualizar los datos del usuario
+app.put("/api/user/:id", async (req, res) => {
+  const { id } = req.params;
+  const { nombre, apellido_paterno, apellido_materno, correo } = req.body;
+  try {
+    const result = await pool.query(
+      "UPDATE usuario SET nombre = $1, apellido_paterno = $2, apellido_materno = $3, correo = $4 WHERE id_usuario = $5 RETURNING *",
+      [nombre, apellido_paterno, apellido_materno, correo, id]
+    );
+    if (result.rows.length > 0) {
+      res.json(result.rows[0]);
+    } else {
+      res.status(404).json({ message: "Usuario no encontrado" });
+    }
+  } catch (error) {
+    console.error("Error al actualizar los datos del usuario:", error);
+    res.status(500).json({ message: "Error en el servidor" });
+  }
+});
+
+// Cambiar la contraseña del usuario
+app.put("/api/user/:id/change-password", async (req, res) => {
+  const { id } = req.params;
+  const { currentPassword, newPassword } = req.body;
+  try {
+    // Verificar la contraseña actual
+    const user = await pool.query("SELECT contraseña FROM usuario WHERE id_usuario = $1", [id]);
+    if (user.rows.length === 0) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
+    const passwordMatch = await bcrypt.compare(currentPassword, user.rows[0].contraseña);
+    if (!passwordMatch) {
+      return res.status(400).json({ message: "Contraseña actual incorrecta" });
+    }
+
+    // Hashear la nueva contraseña
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Actualizar la contraseña
+    await pool.query("UPDATE usuario SET contraseña = $1 WHERE id_usuario = $2", [hashedPassword, id]);
+    res.json({ message: "Contraseña actualizada exitosamente" });
+  } catch (error) {
+    console.error("Error al cambiar la contraseña:", error);
+    res.status(500).json({ message: "Error en el servidor" });
+  }
+});
+
+// Obtener estadísticas del usuario
+app.get("/api/user/:id/statistics", async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Obtener el número de escenarios resueltos correctamente
+    const correctos = await pool.query(
+      "SELECT COUNT(*) AS correctos FROM Escenarios_resultados WHERE id_usuario = $1 AND resultado = true",
+      [id]
+    );
+
+    // Obtener el número total de intentos
+    const totalIntentos = await pool.query(
+      "SELECT COUNT(*) AS total FROM Escenarios_resultados WHERE id_usuario = $1",
+      [id]
+    );
+
+    res.json({
+      correctos: correctos.rows[0].correctos,
+      total: totalIntentos.rows[0].total,
+    });
+  } catch (error) {
+    console.error("Error al obtener estadísticas:", error);
+    res.status(500).json({ message: "Error en el servidor" });
+  }
+});
+
+// Obtener respuestas del usuario
+app.get("/api/user/:id/responses", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      "SELECT e.titulo, o.descripcion, er.resultado, er.fecha " +
+      "FROM Escenarios_resultados er " +
+      "JOIN Escenarios e ON er.id_escenario = e.id_escenario " +
+      "JOIN Opciones o ON er.id_opcion = o.id_opcion " +
+      "WHERE er.id_usuario = $1",
+      [id]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error al obtener respuestas:", error);
+    res.status(500).json({ message: "Error en el servidor" });
+  }
+});

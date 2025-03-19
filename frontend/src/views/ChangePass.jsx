@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { MdLock, MdSave } from "react-icons/md";
+import {  MdSave } from "react-icons/md";
 
 const ChangePasswordContainer = styled.div`
   padding: 2rem;
@@ -10,8 +10,8 @@ const ChangePasswordContainer = styled.div`
   background-color: #f9f9f9;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  margin-top: 80px; /* Añadir margen superior para evitar que el contenido se solape con el Navbar */
 `;
-
 const ChangePasswordHeader = styled.h2`
   color: #1d3557;
   text-align: center;
@@ -82,7 +82,7 @@ function ChangePassword() {
         const data = await response.json();
         if (response.ok) {
           alert("Contraseña cambiada exitosamente");
-          navigate("/perfil");
+          navigate("/profile");
         } else {
           alert(data.message || "Error al cambiar la contraseña");
         }
@@ -93,40 +93,42 @@ function ChangePassword() {
   };
 
   return (
-    <ChangePasswordContainer>
-      <ChangePasswordHeader>Cambiar Contraseña</ChangePasswordHeader>
+    <>
+      <ChangePasswordContainer>
+        <ChangePasswordHeader>Cambiar Contraseña</ChangePasswordHeader>
 
-      <ChangePasswordSection>
-        <ChangePasswordLabel>Contraseña Actual:</ChangePasswordLabel>
-        <ChangePasswordInput
-          type="password"
-          value={currentPassword}
-          onChange={(e) => setCurrentPassword(e.target.value)}
-        />
-      </ChangePasswordSection>
+        <ChangePasswordSection>
+          <ChangePasswordLabel>Contraseña Actual:</ChangePasswordLabel>
+          <ChangePasswordInput
+            type="password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+          />
+        </ChangePasswordSection>
 
-      <ChangePasswordSection>
-        <ChangePasswordLabel>Nueva Contraseña:</ChangePasswordLabel>
-        <ChangePasswordInput
-          type="password"
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-        />
-      </ChangePasswordSection>
+        <ChangePasswordSection>
+          <ChangePasswordLabel>Nueva Contraseña:</ChangePasswordLabel>
+          <ChangePasswordInput
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+          />
+        </ChangePasswordSection>
 
-      <ChangePasswordSection>
-        <ChangePasswordLabel>Confirmar Nueva Contraseña:</ChangePasswordLabel>
-        <ChangePasswordInput
-          type="password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-        />
-      </ChangePasswordSection>
+        <ChangePasswordSection>
+          <ChangePasswordLabel>Confirmar Nueva Contraseña:</ChangePasswordLabel>
+          <ChangePasswordInput
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+        </ChangePasswordSection>
 
-      <ChangePasswordButton onClick={handleSave}>
-        <MdSave /> Guardar Cambios
-      </ChangePasswordButton>
-    </ChangePasswordContainer>
+        <ChangePasswordButton onClick={handleSave}>
+          <MdSave /> Guardar Cambios
+        </ChangePasswordButton>
+      </ChangePasswordContainer>
+    </>
   );
 }
 

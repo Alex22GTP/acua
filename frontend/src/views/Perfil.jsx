@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { MdEdit, MdLock, MdSave } from "react-icons/md";
-import Navbar from "../components/Navbar1"; // Importar el Navbar
-
+import Navbar from '../components/Navbar1';
 
 const ProfileContainer = styled.div`
   padding: 2rem;
@@ -12,7 +11,7 @@ const ProfileContainer = styled.div`
   background-color: #f9f9f9;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  margin-top: 80px; /* Añadir margen superior */
+  margin-top: 80px; /* Añadir margen superior para evitar que el contenido se solape con el Navbar */
 `;
 
 const ProfileHeader = styled.h2`
@@ -67,7 +66,7 @@ function Profile() {
       nombre: "",
       apellido_paterno: "",
       apellido_materno: "",
-      email: "",
+      correo: "",
     });
     const [isEditing, setIsEditing] = useState(false);
     const navigate = useNavigate();
@@ -165,9 +164,9 @@ function Profile() {
           <ProfileSection>
             <ProfileLabel>Correo Electrónico:</ProfileLabel>
             <ProfileInput
-              type="email"
-              name="email"
-              value={userData.email}
+              type="correo"
+              name="correo"
+              value={userData.correo}
               onChange={handleInputChange}
               disabled={!isEditing}
             />

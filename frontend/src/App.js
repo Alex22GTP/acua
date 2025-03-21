@@ -5,6 +5,8 @@ import EscenarioIncendios1 from './views/esc1-incendios';
 import Img from './views/Img';
 import Carrucel from './views/Carrucel';
 import Login from './views/Login';
+import Perfil from './views/Perfil';
+import CambiarPass from './views/ChangePass';
 
 
 
@@ -17,6 +19,8 @@ function App() {
         <Route path="/img" element={<Img />} />
         <Route path="/login" element={<Login />} />
         <Route path="/carrucel" element={<Carrucel />} />
+        <Route path="/perfil" element={<Perfil />} />
+        <Route path="/cambiarpass" element={<CambiarPass />} />
 
 
       </Routes>

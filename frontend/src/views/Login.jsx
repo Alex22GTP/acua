@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "./login.css";
 
 export default function Auth() {
-  const [isLogin, setIsLogin] = useState(true);
+  const [isLogin, setIsLogin] = useState(true); // Estado para alternar entre login y registro
   const [formData, setFormData] = useState({
     nombre: "",
     apellido_paterno: "",
@@ -51,11 +51,13 @@ export default function Auth() {
         if (response.ok) {
           localStorage.setItem("userId", data.userId);
           localStorage.setItem("id_rol", data.id_rol);
+          localStorage.setItem("userName", data.nombre); // Guardar el nombre del usuario
 
           setModalMessage("Inicio de sesión exitoso");
           setShowModal(true);
 
           setTimeout(() => {
+            setShowModal(false); // Cierra el modal antes de redirigir
             if (data.id_rol === 1) {
               navigate("/admin");
             } else {
@@ -85,7 +87,7 @@ export default function Auth() {
         });
         const data = await response.json();
         if (response.ok) {
-          setModalMessage("Registro exitoso");
+          setModalMessage("Registro exitoso.");
           setShowModal(true);
           setFormData({
             nombre: "",
@@ -96,7 +98,11 @@ export default function Auth() {
             confirmPassword: "",
             id_rol: 2,
           });
-          setTimeout(() => navigate("/"), 2000);
+
+          setTimeout(() => {
+            setShowModal(false); // Cierra el modal
+            setIsLogin(true); // Cambia al formulario de inicio de sesión
+          }, 2000);
         } else {
           setModalMessage(data.message || "Error en el registro");
           setShowModal(true);

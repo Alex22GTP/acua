@@ -36,7 +36,7 @@ function Footer() {
   return (
     <FooterContainer>
       <FooterText>
-        © 2023 Secrufy. Todos los derechos reservados.
+        © 2025 Secrufy. Todos los derechos reservados.
       </FooterText>
       <FooterDescription>
         Secrufy es una plataforma integral para la capacitación en primeros auxilios y

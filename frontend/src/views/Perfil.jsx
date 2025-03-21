@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { MdEdit, MdLock, MdSave } from "react-icons/md";
-import Navbar from "../components/Navbar"; // Importar el Navbar
+import Navbar from "../components/Navbar1"; // Importar el Navbar
 
 
 const ProfileContainer = styled.div`

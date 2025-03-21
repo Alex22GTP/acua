@@ -65,7 +65,7 @@ function Profile() {
       nombre: "",
       apellido_paterno: "",
       apellido_materno: "",
-      email: "",
+      correo: "",
     });
     const [isEditing, setIsEditing] = useState(false);
     const navigate = useNavigate();
@@ -163,9 +163,9 @@ function Profile() {
           <ProfileSection>
             <ProfileLabel>Correo Electrónico:</ProfileLabel>
             <ProfileInput
-              type="email"
-              name="email"
-              value={userData.email}
+              type="correo"
+              name="correo"
+              value={userData.correo}
               onChange={handleInputChange}
               disabled={!isEditing}
             />

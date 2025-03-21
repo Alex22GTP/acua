@@ -1,6 +1,6 @@
 .container {
     text-align: center;
-    background-color: #202e58;
+    background-color: #1d3557;
     padding: 20px;
     border-radius: 10px;
     width: 98%;
@@ -130,10 +130,10 @@
     width: 100%;
 }
 
-.option:nth-child(1) { background-color: #e63946; }
-.option:nth-child(2) { background-color: #3616ac; }
-.option:nth-child(3) { background-color: #a79900; }
-.option:nth-child(4) { background-color: #221d21; }
+.option:nth-child(1) { background-color: #E76F51; }
+.option:nth-child(2) { background-color: #3700ff; }
+.option:nth-child(3) { background-color: #e3d106; }
+.option:nth-child(4) { background-color: #A7C957; }
 
 .option:hover {
     opacity: 0.8;

@@ -127,14 +127,14 @@ app.post("/api/subir-categoria", upload.single("imagen"), async (req, res) => {
 });
 
 // Ruta para obtener un escenario con sus opciones
-app.get("/escenarios/:id", async (req, res) => {
-  const { id } = req.params;
+app.get("/escenarios/:id_catalogo/:id", async (req, res) => {
+  const { id_catalogo, id } = req.params;
 
   try {
     const escenarioQuery = `
       SELECT e.id_escenario, e.titulo, e.descripcion, e.imagen
       FROM escenarios e
-      WHERE e.id_escenario = $1
+      WHERE e.id_escenario = $1 AND e.id_catalogo = $2
     `;
     const opcionesQuery = `
       SELECT o.id_opcion, o.descripcion, o.solucion, o.retroalimentacion
@@ -142,7 +142,7 @@ app.get("/escenarios/:id", async (req, res) => {
       WHERE o.id_escenario = $1
     `;
 
-    const escenarioResult = await pool.query(escenarioQuery, [id]);
+    const escenarioResult = await pool.query(escenarioQuery, [id, id_catalogo]);
     const opcionesResult = await pool.query(opcionesQuery, [id]);
 
     if (escenarioResult.rows.length === 0) {
@@ -289,17 +289,22 @@ app.get("/api/estadisticas/:userId", async (req, res) => {
 });
 
 app.post("/api/guardar-respuesta", async (req, res) => {
-  const { userId, id_escenario, id_opcion } = req.body;
-  console.log("Datos recibidos:", { userId, id_escenario, id_opcion });
+  const { userId, id_escenario, id_opcion, respuesta_automatica } = req.body;
+  console.log("Datos recibidos:", { userId, id_escenario, id_opcion, respuesta_automatica });
 
   try {
-    // Verificar si la opción seleccionada es correcta
-    const opcionCorrecta = await pool.query(
-      "SELECT solucion FROM Opciones WHERE id_opcion = $1",
-      [id_opcion]
-    );
+    let resultado = false; // Por defecto, asumimos que la respuesta es incorrecta
 
-    const resultado = opcionCorrecta.rows[0]?.solucion ? true : false;
+    // Si no es una respuesta automática (tiempo agotado), verificamos si la opción seleccionada es correcta
+    if (!respuesta_automatica) {
+      const opcionCorrecta = await pool.query(
+        "SELECT solucion FROM Opciones WHERE id_opcion = $1",
+        [id_opcion]
+      );
+
+      resultado = opcionCorrecta.rows[0]?.solucion ? true : false;
+    }
+
     console.log("Resultado:", resultado);
 
     // Obtener el último intento del usuario en el escenario actual
@@ -313,8 +318,8 @@ app.post("/api/guardar-respuesta", async (req, res) => {
 
     // Guardar el resultado con el intento actualizado
     await pool.query(
-      "INSERT INTO Escenarios_resultados (id_usuario, id_escenario, id_opcion, resultado, intento) VALUES ($1, $2, $3, $4, $5)",
-      [userId, id_escenario, id_opcion, resultado, nuevoIntento]
+      "INSERT INTO Escenarios_resultados (id_usuario, id_escenario, id_opcion, resultado, intento, respuesta_automatica) VALUES ($1, $2, $3, $4, $5, $6)",
+      [userId, id_escenario, id_opcion, resultado, nuevoIntento, respuesta_automatica]
     );
 
     // Verificar si hay un siguiente escenario
@@ -336,51 +341,45 @@ app.get("/api/respuestas/:userId", async (req, res) => {
   const { userId } = req.params;
 
   try {
-      const result = await pool.query(
-          "SELECT e.titulo, o.descripcion, er.resultado, er.fecha " +
-          "FROM Escenarios_resultados er " +
-          "JOIN Escenarios e ON er.id_escenario = e.id_escenario " +
-          "JOIN Opciones o ON er.id_opcion = o.id_opcion " +
-          "WHERE er.id_usuario = $1",
-          [userId]
-      );
-      res.json(result.rows);
+    const result = await pool.query(
+      "SELECT e.titulo, o.descripcion, er.resultado, er.fecha, er.respuesta_automatica " +
+      "FROM Escenarios_resultados er " +
+      "JOIN Escenarios e ON er.id_escenario = e.id_escenario " +
+      "LEFT JOIN Opciones o ON er.id_opcion = o.id_opcion " + // Usamos LEFT JOIN por si id_opcion es NULL
+      "WHERE er.id_usuario = $1",
+      [userId]
+    );
+
+    res.json(result.rows);
   } catch (error) {
-      console.error("Error al obtener respuestas:", error);
-      res.status(500).json({ message: "Error en el servidor" });
+    console.error("Error al obtener respuestas:", error);
+    res.status(500).json({ message: "Error en el servidor" });
   }
 });
 
-
-app.get("/api/searchCategories", async (req, res) => {
-  const searchTerm = req.query.term;
-
-  if (!searchTerm) {
-    return res.status(400).json({ error: "El término de búsqueda es requerido" });
-  }
+app.get("/api/verificar-respuesta-automatica", async (req, res) => {
+  const { userId, id_escenario } = req.query;
+  console.log("Verificando respuesta automática para:", { userId, id_escenario });
 
   try {
-    const query = `
-      SELECT id_catalogo, nombre, imagen 
-      FROM Catalogos 
-      WHERE nombre ILIKE $1
-    `;
-    const result = await pool.query(query, [`%${searchTerm}%`]);
-    console.log("Resultados de la consulta:", result.rows); // Verifica los resultados
+    // Obtener el último intento del usuario en el escenario actual
+    const ultimoIntento = await pool.query(
+      "SELECT MAX(intento) AS max_intento FROM Escenarios_resultados WHERE id_usuario = $1 AND id_escenario = $2",
+      [userId, id_escenario]
+    );
 
-    const catalogos = result.rows.map((catalogo) => {
-      const imagenBuffer = catalogo.imagen;
-      const base64Image = imagenBuffer.toString('base64');
-      return {
-        id_catalogo: catalogo.id_catalogo,
-        nombre: catalogo.nombre,
-        imagen: `data:image/png;base64,${base64Image}`
-      };
-    });
+    const nuevoIntento = (ultimoIntento.rows[0].max_intento || 0) + 1;
+    console.log("Nuevo intento:", nuevoIntento);
 
-    res.json(catalogos);
+    // Guardar la respuesta automática
+    await pool.query(
+      "INSERT INTO Escenarios_resultados (id_usuario, id_escenario, id_opcion, resultado, intento, respuesta_automatica) VALUES ($1, $2, $3, $4, $5, $6)",
+      [userId, id_escenario, null, false, nuevoIntento, true]
+    );
+
+    res.json({ success: true, message: "Respuesta automática guardada correctamente" });
   } catch (error) {
-    console.error("Error al buscar catálogos:", error);
-    res.status(500).json({ error: "Error al buscar catálogos" });
+    console.error("Error al guardar la respuesta automática:", error);
+    res.status(500).json({ message: "Error en el servidor" });
   }
 });

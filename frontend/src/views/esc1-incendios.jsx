@@ -6,7 +6,7 @@ import alertSound from "../sounds/alert.mp3";
 
 const EscenarioIncendios1 = () => {
   const navigate = useNavigate();
-  const { id_escenario } = useParams();
+  const { id_catalogo, id_escenario } = useParams(); // Captura ambos parámetros
   const [escenario, setEscenario] = useState(null);
   const [opciones, setOpciones] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,11 +18,13 @@ const EscenarioIncendios1 = () => {
   const [timeUp, setTimeUp] = useState(false);
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [incorrectAnswers, setIncorrectAnswers] = useState(0);
+  const [unansweredScenarios, setUnansweredScenarios] = useState(0); // Escenarios no contestados
   const [hasNext, setHasNext] = useState(null); // Inicialmente null
   const [showResults, setShowResults] = useState(false); // Controlar si se muestra el cuadro de resultados
   const secondHandRef = useRef(null);
   const tickAudio = useRef(new Audio(tickSound));
   const alertAudio = useRef(new Audio(alertSound));
+  const timeUpHandled = useRef(false); // Para evitar que se ejecute múltiples veces
 
   // Formatear el tiempo
   const formatTime = (time) => {
@@ -35,7 +37,7 @@ const EscenarioIncendios1 = () => {
   useEffect(() => {
     const fetchEscenario = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/escenarios/${id_escenario}`);
+        const response = await fetch(`http://localhost:5000/escenarios/${id_catalogo}/${id_escenario}`);
         if (!response.ok) {
           if (response.status === 404) {
             setHasNext(false); // No hay más escenarios
@@ -48,7 +50,7 @@ const EscenarioIncendios1 = () => {
         const data = await response.json();
         setEscenario(data.escenario);
         setOpciones(data.opciones);
-        setHasNext(data.hasNext); // Actualiza si hay más escenarios
+        setHasNext(data.hasNext ?? false); // Si data.hasNext es undefined, usa false
       } catch (err) {
         setError(err.message);
       } finally {
@@ -57,7 +59,7 @@ const EscenarioIncendios1 = () => {
     };
 
     fetchEscenario();
-  }, [id_escenario]);
+  }, [id_catalogo, id_escenario]);
 
   // Activar el temporizador y el sonido al cargar un nuevo escenario
   useEffect(() => {
@@ -66,6 +68,13 @@ const EscenarioIncendios1 = () => {
       tickAudio.current.play().catch((err) => console.warn("Error al reproducir sonido:", err));
     }
   }, [escenario, soundEnabled]);
+
+  useEffect(() => {
+    if (timeUp) {
+      console.log("Tiempo agotado, verificando hasNext:", hasNext);
+      console.log("selectedOption:", selectedOption);
+    }
+  }, [timeUp, hasNext, selectedOption]);
 
   // Temporizador
   useEffect(() => {
@@ -90,45 +99,118 @@ const EscenarioIncendios1 = () => {
           clearInterval(timer);
           setTimeUp(true);
           alertAudio.current.play();
+
+          if (!timeUpHandled.current) {
+            timeUpHandled.current = true; // Evitar que se ejecute múltiples veces
+
+            const guardarRespuestaAutomatica = async () => {
+              const userId = localStorage.getItem("userId");
+              if (!userId) {
+                console.error("userId no encontrado en localStorage");
+                return;
+              }
+
+              try {
+                const response = await fetch("http://localhost:5000/api/guardar-respuesta", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    userId: userId,
+                    id_escenario: id_escenario,
+                    id_opcion: null,
+                    respuesta_automatica: true,
+                  }),
+                });
+
+                const data = await response.json();
+                console.log("Respuesta automática guardada:", data);
+
+                if (data.success) {
+                  setUnansweredScenarios((prev) => prev + 1); // Incrementar el contador de escenarios no contestados
+                }
+              } catch (error) {
+                console.error("Error al guardar la respuesta automática:", error);
+              }
+            };
+
+            guardarRespuestaAutomatica();
+
+            const verificarSiguienteEscenario = async () => {
+              try {
+                const response = await fetch(`http://localhost:5000/escenarios/${parseInt(id_escenario) + 1}`);
+                if (response.ok) {
+                  setHasNext(true);
+                } else {
+                  setHasNext(false);
+                }
+              } catch (error) {
+                console.error("Error al verificar el siguiente escenario:", error);
+                setHasNext(false);
+              }
+            };
+
+            verificarSiguienteEscenario();
+          }
+
           return 0;
         }
       });
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timerRunning, soundEnabled]);
+  }, [timerRunning, soundEnabled, id_escenario]);
+
+
+ // Restablecer timeUp y timeUpHandled al cargar un nuevo escenario
+ useEffect(() => {
+  if (escenario) {
+    setTimeUp(false);
+    timeUpHandled.current = false; // Reiniciar el flag
+  }
+}, [escenario]);
+
 
   const handleNextScenario = () => {
+    console.log("handleNextScenario ejecutado");
+    console.log("hasNext:", hasNext);
+    console.log("timeUp:", timeUp);
+  
     if (hasNext === false) {
-      // Si no hay más escenarios, mostrar el cuadro de resultados
+      console.log("No hay más escenarios, mostrando resultados");
       setShowResults(true);
-      setSelectedOption(null); // Restablecer la opción seleccionada
-    } else {
-      // Si hay más escenarios, navegar al siguiente
       setSelectedOption(null);
       setTimeUp(false);
-      setTimeLeft(10); // Reiniciar el tiempo a 10 segundos
-      setTimerRunning(true); // Activar el temporizador
-
-      // Si el sonido está habilitado, reproducir el sonido del reloj
+      setTimerRunning(false);
+    } else if (hasNext === true) {
+      console.log("Navegando al siguiente escenario");
+      setSelectedOption(null);
+      setTimeUp(false);
+      setTimeLeft(10);
+      setTimerRunning(true);
+  
       if (soundEnabled) {
         tickAudio.current.play().catch((err) => console.warn("Error al reproducir sonido:", err));
       }
-
-      navigate(`/escenarios/${parseInt(id_escenario) + 1}`);
+  
+      navigate(`/escenarios/6/${parseInt(id_escenario) + 1}`); // Aquí se incluye el id_catalogo (6 en este caso)
+    }else {
+      console.error("hasNext es undefined o null");
     }
   };
 
   const handleOptionSelect = async (opcion) => {
     setSelectedOption(opcion);
     setTimerRunning(false);
+    setTimeUp(false); // Restablecer timeUp al seleccionar una opción
     tickAudio.current.pause();
     tickAudio.current.currentTime = 0;
   
     if (opcion.solucion) {
-      setCorrectAnswers(correctAnswers + 1);
+      setCorrectAnswers((prev) => prev + 1);
     } else {
-      setIncorrectAnswers(incorrectAnswers + 1);
+      setIncorrectAnswers((prev) => prev + 1);
     }
   
     try {
@@ -144,19 +226,24 @@ const EscenarioIncendios1 = () => {
           userId: userId, // Enviar el userId del usuario autenticado
           id_escenario: id_escenario,
           id_opcion: opcion.id_opcion,
+          respuesta_automatica: false, // No es una respuesta automática
         }),
       });
   
       const data = await response.json();
-      if (data.success) {
-        console.log("Respuesta guardada correctamente");
-        setHasNext(data.hasNext); // Actualiza si hay más escenarios
-      } else {
-        console.error("Error al guardar la respuesta");
-      }
-    } catch (error) {
-      console.error("Error al enviar la respuesta al servidor:", error);
+      console.log("Respuesta del servidor:", data); // Inspecciona la respuesta
+
+    if (data.success) {
+      console.log("Respuesta guardada correctamente");
+      setHasNext(data.hasNext ?? false); // Si data.hasNext es undefined, usa false
+    } else {
+      console.error("Error al guardar la respuesta");
+      setHasNext(false); // Si hay un error, asume que no hay más escenarios
     }
+  } catch (error) {
+    console.error("Error al enviar la respuesta al servidor:", error);
+    setHasNext(false); // Si hay un error, asume que no hay más escenarios
+  }
   };
 
   const handleFinish = () => {
@@ -164,7 +251,7 @@ const EscenarioIncendios1 = () => {
   };
 
   // Calcular la calificación y el mensaje de retroalimentación
-  const totalEscenarios = correctAnswers + incorrectAnswers;
+  const totalEscenarios = correctAnswers + incorrectAnswers + unansweredScenarios;
   const calificacion = totalEscenarios > 0 ? Math.round((correctAnswers / totalEscenarios) * 100) : 0;
 
   let mensajeRetroalimentacion = "";
@@ -252,7 +339,7 @@ const EscenarioIncendios1 = () => {
       )}
 
       {/* Cuadro emergente cuando el tiempo se ha agotado */}
-      {timeUp && !showResults && (
+      {timeUp && !showResults && !selectedOption && (
         <>
           <div className="feedback-overlay"></div>
           <div className="feedback-popup">
@@ -273,6 +360,7 @@ const EscenarioIncendios1 = () => {
             <h2>🏁 ¡Has completado todos los escenarios!</h2>
             <p>Respuestas correctas: {correctAnswers}</p>
             <p>Respuestas incorrectas: {incorrectAnswers}</p>
+            <p>Escenarios no contestados: {unansweredScenarios}</p>
             <p>Calificación: {calificacion}%</p>
             <p>{mensajeRetroalimentacion}</p>
             <button onClick={handleFinish} className="feedback-next-btn2">

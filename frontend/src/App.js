@@ -15,7 +15,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/escenarios/:id_escenario" element={<EscenarioIncendios1 />} />
+        <Route path="/escenarios/:id_catalogo/:id_escenario" element={<EscenarioIncendios1 />} />
         <Route path="/img" element={<Img />} />
         <Route path="/login" element={<Login />} />
         <Route path="/carrucel" element={<Carrucel />} />

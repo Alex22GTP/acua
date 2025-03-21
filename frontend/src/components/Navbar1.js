@@ -6,9 +6,13 @@ import { motion } from "framer-motion";
 import logo from "../img/logoss.png";
 import { createGlobalStyle } from 'styled-components';
 
-// Importar la fuente de Google Fonts
+// Cargar la fuente de Google Fonts
 const GlobalStyle = createGlobalStyle`
   @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+
+  body {
+    font-family: 'Poppins', sans-serif;
+  }
 `;
 
 const NavbarContainer = styled.nav`

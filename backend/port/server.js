@@ -129,6 +129,8 @@ app.post("/api/subir-categoria", upload.single("imagen"), async (req, res) => {
 // Ruta para obtener un escenario con sus opciones
 app.get("/escenarios/:id_catalogo/:id", async (req, res) => {
   const { id_catalogo, id } = req.params;
+  console.log(`Solicitando escenario con id_catalogo: ${id_catalogo}, id_escenario: ${id}`);
+
 
   try {
     const escenarioQuery = `
@@ -143,9 +145,11 @@ app.get("/escenarios/:id_catalogo/:id", async (req, res) => {
     `;
 
     const escenarioResult = await pool.query(escenarioQuery, [id, id_catalogo]);
+    console.log("Resultado de la consulta:", escenarioResult.rows);
     const opcionesResult = await pool.query(opcionesQuery, [id]);
 
     if (escenarioResult.rows.length === 0) {
+      console.error("Escenario no encontrado en la BD");
       return res.status(404).json({ error: "Escenario no encontrado" });
     }
 
@@ -505,43 +509,5 @@ app.get("/api/user/:id/responses", async (req, res) => {
   } catch (error) {
     console.error("Error al obtener respuestas:", error);
     res.status(500).json({ message: "Error en el servidor" });
-  }
-});
-
-app.get("/api/searchCategories", async (req, res) => {
-  const searchTerm = req.query.term;
-
-  if (!searchTerm) {
-    return res.status(400).json({ error: "El término de búsqueda es requerido" });
-  }
-
-  try {
-    const query = `
-      SELECT id_catalogo, nombre, imagen 
-      FROM Catalogos 
-      WHERE nombre ILIKE $1
-    `;
-    const result = await pool.query(query, [`%${searchTerm}%`]); // Corrección en la consulta
-
-    console.log("Resultados de la consulta:", result.rows);
-
-    const catalogos = result.rows.map((catalogo) => {
-      let base64Image = null;
-
-      if (catalogo.imagen) {
-        base64Image = `data:image/png;base64,${catalogo.imagen.toString('base64')}`;
-      }
-
-      return {
-        id_catalogo: catalogo.id_catalogo,
-        nombre: catalogo.nombre,
-        imagen: base64Image, // Se asigna null si no hay imagen
-      };
-    });
-
-    res.json(catalogos);
-  } catch (error) {
-    console.error("Error al buscar catálogos:", error);
-    res.status(500).json({ error: "Error al buscar catálogos" });
   }
 });

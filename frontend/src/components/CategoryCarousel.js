@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom"; // Importa useNavigate
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
@@ -106,9 +107,29 @@ const SectionDescription = styled.p`
 `;
 
 const MostrarCatalogos = () => {
+  const navigate = useNavigate();
   const [catalogos, setCatalogos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
+
+  // Función para manejar el clic en una imagen
+  const handleClick = async (id_catalogo) => {
+    try {
+      // Obtener todos los escenarios del catálogo
+      const response = await fetch(`http://localhost:5000/escenarios/${id_catalogo}`);
+      const data = await response.json();
+  
+      if (data.escenarios && data.escenarios.length > 0) {
+        // Redirigir al primer escenario
+        const primerEscenario = data.escenarios[0].id_escenario;
+        navigate(`/escenarios/${id_catalogo}/${primerEscenario}`);
+      } else {
+        console.error("No hay escenarios para este catálogo");
+      }
+    } catch (error) {
+      console.error("Error al obtener los escenarios:", error);
+    }
+  };
 
   useEffect(() => {
     // Hacer la solicitud al backend
@@ -202,7 +223,7 @@ const MostrarCatalogos = () => {
       <Slider {...settings}>
         {catalogos.map((catalogo) => (
           <div key={catalogo.id_catalogo} style={{ padding: "10px" }}>
-            <CircleContainer>
+            <CircleContainer onClick={() => handleClick(catalogo.id_catalogo)}> {/* Agrega onClick */}
               {catalogo.imagen && (
                 <CircleImage
                   src={catalogo.imagen}

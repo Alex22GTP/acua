@@ -139,7 +139,7 @@ const EscenarioIncendios1 = () => {
 
             const verificarSiguienteEscenario = async () => {
               try {
-                const response = await fetch(`http://localhost:5000/escenarios/${parseInt(id_escenario) + 1}`);
+                const response = await fetch(`http://localhost:5000/escenarios/${id_catalogo}/${parseInt(id_escenario) + 1}`);
                 if (response.ok) {
                   setHasNext(true);
                 } else {
@@ -160,7 +160,7 @@ const EscenarioIncendios1 = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timerRunning, soundEnabled, id_escenario]);
+  }, [timerRunning, soundEnabled, id_escenario, id_catalogo]);
 
 
  // Restablecer timeUp y timeUpHandled al cargar un nuevo escenario
@@ -194,7 +194,7 @@ const EscenarioIncendios1 = () => {
         tickAudio.current.play().catch((err) => console.warn("Error al reproducir sonido:", err));
       }
   
-      navigate(`/escenarios/6/${parseInt(id_escenario) + 1}`); // Aquí se incluye el id_catalogo (6 en este caso)
+      navigate(`/escenarios/${id_catalogo}/${parseInt(id_escenario) + 1}`);
     }else {
       console.error("hasNext es undefined o null");
     }
@@ -268,6 +268,7 @@ const EscenarioIncendios1 = () => {
   if (loading) return <p>Cargando escenario...</p>;
   if (error) return <p>Error: {error}</p>;
   if (hasNext === null) return <p>Cargando información de escenarios...</p>; // Espera a que se cargue hasNext
+  if (!escenario) return <p>No se encontró el escenario.</p>; // Validación adicional
 
   return (
     <div className="container">

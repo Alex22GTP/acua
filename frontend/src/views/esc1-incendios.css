@@ -37,6 +37,7 @@
     align-items: center;
     justify-content: center;
     box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
+    animation: pulse 0.5s infinite; /* Animación de pulsación */
 }
 
 .clock-face {
@@ -90,9 +91,39 @@
 .question1 {
     font-size: 30px;
     font-weight: bold;
-    color: rgb(255, 1, 1);
     margin-bottom: 15px;
-    margin-top: 10px; /* Asegura que haya espacio suficiente */
+    margin-top: 10px;
+    background: linear-gradient(
+        90deg,
+        rgba(255, 0, 0, 1) 0%, /* Rojo */
+        rgba(255, 154, 0, 1) 10%, /* Naranja */
+        rgba(208, 222, 33, 1) 20%, /* Amarillo */
+        rgb(56, 223, 51) 30%, /* Verde */
+        rgb(63, 153, 218) 40%, /* Azul claro */
+        rgb(47, 226, 172) 50%, /* Azul */
+        rgb(238, 133, 28) 60%, /* Azul oscuro */
+        rgba(95, 21, 242, 1) 70%, /* Índigo */
+        rgba(186, 12, 248, 1) 80%, /* Violeta */
+        rgba(251, 7, 217, 1) 90%, /* Rosa */
+        rgba(255, 0, 0, 1) 100% /* Rojo */
+    );
+    -webkit-background-clip: text; /* Soporte para navegadores basados en WebKit (Chrome, Safari) */
+    background-clip: text; /* Soporte estándar */
+    color: transparent; /* Hace que el texto sea transparente para mostrar el degradado */
+    animation: pulse 1.5s infinite; /* Animación de pulsación */
+}
+
+/* Animación de pulsación */
+@keyframes pulse {
+    0% {
+        transform: scale(1); /* Tamaño normal */
+    }
+    50% {
+        transform: scale(1.1); /* Aumenta ligeramente el tamaño */
+    }
+    100% {
+        transform: scale(1); /* Vuelve al tamaño normal */
+    }
 }
 
 /* Imagen */
@@ -142,9 +173,15 @@
 /* Título del escenario */
 .scenario-title {
     text-align: center;
-    font-size: 44px;
+    font-size: 40px;
     font-weight: bold;
     margin-bottom: 10px;
+    color: #ffffff; /* Color del texto (negro en este caso) */
+    text-shadow: 
+        -1px -1px 0 #000000, /* Sombra superior izquierda (blanca) */
+        1px -1px 0 #000000,  /* Sombra superior derecha (blanca) */
+        -1px 1px 0 #000000,  /* Sombra inferior izquierda (blanca) */
+        1px 1px 0 #000000;   /* Sombra inferior derecha (blanca) */
 }
 
 /* 📌 Cuadro Emergente */

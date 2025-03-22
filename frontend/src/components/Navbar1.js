@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import { MdAccountCircle, MdSettings, MdLogout, MdHelp, MdManageAccounts, MdSecurity, MdMenu, MdClose, MdBarChart, MdHome } from "react-icons/md";
+import { MdAccountCircle,  MdLogout,  MdManageAccounts,  MdMenu, MdClose, MdBarChart, MdHome } from "react-icons/md";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import logo from "../img/logoss.png";
@@ -72,30 +72,6 @@ const IconsContainer = styled.div`
   }
 `;
 
-const IconWrapper = styled.div`
-  position: relative;
-`;
-
-const IconButton = styled.button`
-  background: none;
-  border: none;
-  font-size: 2rem;
-  cursor: pointer;
-  transition: transform 0.3s ease, color 0.3s ease;
-  color: ${({ scrolled }) => (scrolled ? "#a8dadc" : "#1d3557")};
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-
-  &:hover {
-    transform: scale(1.3);
-    color: ${({ scrolled }) => (scrolled ? "#ffffff" : "#1d3557")};
-  }
-
-  @media (max-width: 768px) {
-    font-size: 1.7rem;
-  }
-`;
 
 const MobileMenuButton = styled.button`
   background: none;

@@ -220,7 +220,7 @@ function Profile() {
         </ButtonContainer>
 
         <ActionButtonsContainer>
-          <ProfileButton onClick={() => navigate("/change-password")}>
+          <ProfileButton onClick={() => navigate("/cambiarpass")}>
             <MdLock /> Cambiar Contraseña
           </ProfileButton>
         </ActionButtonsContainer>

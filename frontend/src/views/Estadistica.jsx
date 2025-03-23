@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { MdBarChart, MdCheckCircle, MdAccessTime, MdTrendingUp } from "react-icons/md";
-import Navbar from '../components/Navbar1';
+import Navbar from '../components/Navbar2';
 
 // Estilos basados en las interfaces anteriores
 const StatsContainer = styled.div`

@@ -206,7 +206,7 @@ app.post("/api/login", async (req, res) => {
   try {
     // Buscar usuario en la BD
     const result = await pool.query(
-      "SELECT id_usuario, nombre, correo, contraseña, id_rol FROM usuario WHERE correo = $1", 
+      "SELECT id_usuario, nombre, correo, contraseña FROM usuario WHERE correo = $1", 
       [email]
     );
 
@@ -222,13 +222,12 @@ app.post("/api/login", async (req, res) => {
       return res.status(400).json({ message: "Correo o contraseña incorrectos" });
     }
 
-    // Devolver el nombre del usuario, userId y id_rol
+    // Devolver el nombre del usuario junto con el userId
     res.json({ 
       success: true, 
       message: "Inicio de sesión exitoso", 
       userId: user.id_usuario, 
-      nombre: user.nombre, // Añadir el nombre del usuario
-      id_rol: user.id_rol  // Añadir el id_rol del usuario
+      nombre: user.nombre // Añadir el nombre del usuario
     });
   } catch (error) {
     console.error("Error en el login:", error);
@@ -528,96 +527,5 @@ app.get("/api/searchCategories", async (req, res) => {
   } catch (error) {
     console.error("Error al buscar catálogos:", error);
     res.status(500).json({ error: "Error al buscar catálogos" });
-  }
-});
-
-
-
-app.get("/api/admin/users", async (req, res) => {
-  try {
-    const result = await pool.query("SELECT id_usuario, nombre, correo, id_rol FROM usuario");
-    res.json(result.rows);
-  } catch (error) {
-    console.error("Error al obtener usuarios:", error);
-    res.status(500).json({ message: "Error en el servidor" });
-  }
-});
-
-app.delete("/api/admin/users/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    await pool.query("DELETE FROM usuario WHERE id_usuario = $1", [id]);
-    res.json({ success: true, message: "Usuario eliminado correctamente" });
-  } catch (error) {
-    console.error("Error al eliminar usuario:", error);
-    res.status(500).json({ message: "Error en el servidor" });
-  }
-});
-
-app.get("/api/admin/catalogos", async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT c.id_catalogo, c.nombre, COUNT(er.id_caso) AS intentos
-      FROM Catalogos c
-      LEFT JOIN Escenarios e ON c.id_catalogo = e.id_catalogo
-      LEFT JOIN Escenarios_resultados er ON e.id_escenario = er.id_escenario
-      GROUP BY c.id_catalogo
-    `);
-
-    // Convertir el campo "intentos" a número
-    const catalogos = result.rows.map((catalogo) => ({
-      ...catalogo,
-      intentos: parseInt(catalogo.intentos, 10), // Convertir a número
-    }));
-
-    console.log("Resultado de la consulta:", catalogos); // Verifica la respuesta
-    res.json(catalogos); // Envía la respuesta como JSON
-  } catch (error) {
-    console.error("Error al obtener catálogos:", error);
-    res.status(500).json({ message: "Error en el servidor" });
-  }
-});
-
-app.delete("/api/admin/catalogos/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    await pool.query("DELETE FROM Catalogos WHERE id_catalogo = $1", [id]);
-    res.json({ success: true, message: "Catálogo eliminado correctamente" });
-  } catch (error) {
-    console.error("Error al eliminar catálogo:", error);
-    res.status(500).json({ message: "Error en el servidor" });
-  }
-});
-
-app.post("/api/admin/catalogos", async (req, res) => {
-  const { nombre, imagen } = req.body;
-  try {
-    const result = await pool.query(
-      "INSERT INTO Catalogos (nombre, imagen) VALUES ($1, $2) RETURNING *",
-      [nombre, imagen]
-    );
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error("Error al crear catálogo:", error);
-    res.status(500).json({ message: "Error en el servidor" });
-  }
-});
-
-app.get("/api/admin/catalogos/:id/escenarios", async (req, res) => {
-  const { id } = req.params;
-  try {
-    const result = await pool.query(`
-      SELECT e.id_escenario, e.titulo, 
-             COUNT(er.id_caso) AS intentos,
-             ROUND(AVG(CASE WHEN er.resultado = true THEN 1 ELSE 0 END) * 100, 2) AS porcentaje_correctos
-      FROM Escenarios e
-      LEFT JOIN Escenarios_resultados er ON e.id_escenario = er.id_escenario
-      WHERE e.id_catalogo = $1
-      GROUP BY e.id_escenario
-    `, [id]);
-    res.json(result.rows);
-  } catch (error) {
-    console.error("Error al obtener escenarios:", error);
-    res.status(500).json({ message: "Error en el servidor" });
   }
 });

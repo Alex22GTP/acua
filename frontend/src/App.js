@@ -7,6 +7,8 @@ import Carrucel from './views/Carrucel';
 import Login from './views/Login';
 import Perfil from './views/Perfil';
 import CambiarPass from './views/ChangePass';
+import Estadistica from './views/Estadistica';
+import Admin from './views/Admin';
 
 
 
@@ -21,6 +23,8 @@ function App() {
         <Route path="/carrucel" element={<Carrucel />} />
         <Route path="/perfil" element={<Perfil />} />
         <Route path="/cambiarpass" element={<CambiarPass />} />
+        <Route path="/estadistica" element={<Estadistica />} />
+        <Route path="/admin" element={<Admin />} />
 
 
       </Routes>

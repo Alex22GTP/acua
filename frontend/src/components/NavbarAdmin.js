@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import { MdAccountCircle, MdSettings, MdLogout, MdHelp, MdManageAccounts, MdSecurity, MdMenu, MdClose,  MdBarChart } from "react-icons/md";
+import { MdAccountCircle, MdSettings, MdLogout, MdHelp, MdManageAccounts, MdSecurity, MdMenu, MdClose, MdBarChart, MdAdminPanelSettings } from "react-icons/md";
 import { Link as ScrollLink } from "react-scroll";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -11,6 +11,7 @@ import { createGlobalStyle } from 'styled-components';
 const GlobalStyle = createGlobalStyle`
   @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
 `;
+
 
 const NavbarContainer = styled.nav`
   background-color: ${({ scrolled }) => (scrolled ? "#1d3557" : "#ffffff")};
@@ -225,6 +226,7 @@ const UserName = styled.span`
   color: ${({ scrolled }) => (scrolled ? "#ffffff" : "#1d3557")};
   font-family: 'Poppins', sans-serif;
 `;
+// Estilos (omitiendo los estilos repetidos para simplificar)
 
 function Navbar() {
   const [activeMenu, setActiveMenu] = useState(null);
@@ -232,6 +234,7 @@ function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState("");
+  const [userRole, setUserRole] = useState(null); // Nuevo estado para el rol del usuario
   const navigate = useNavigate();
 
   const toggleMenu = (menu) => {
@@ -253,18 +256,22 @@ function Navbar() {
 
   useEffect(() => {
     const userId = localStorage.getItem("userId");
-    const storedUserName = localStorage.getItem("userName"); // Obtener el nombre del usuario
+    const storedUserName = localStorage.getItem("userName");
+    const storedUserRole = localStorage.getItem("userRole"); // Obtener el rol del usuario
     if (userId) {
       setIsLoggedIn(true);
-      setUserName(storedUserName || "Usuario"); // Usar el nombre del usuario o "Usuario" por defecto
+      setUserName(storedUserName || "Usuario");
+      setUserRole(storedUserRole); // Establecer el rol del usuario
     }
   }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("userId");
     localStorage.removeItem("userName");
+    localStorage.removeItem("userRole"); // Eliminar el rol al cerrar sesión
     setIsLoggedIn(false);
     setUserName("");
+    setUserRole(null);
     navigate("/login");
   };
 
@@ -345,23 +352,34 @@ function Navbar() {
                   {userName && <UserName scrolled={scrolled}>{userName}</UserName>}
                 </IconButton>
                 <DropdownMenu isOpen={activeMenu === "user"} scrolled={scrolled}>
+                  <DropdownItem 
+                    scrolled={scrolled} 
+                    onClick={() => navigate("/perfil")}
+                  >
+                    <MdManageAccounts /> Mi Perfil
+                  </DropdownItem>
 
-                <DropdownItem 
-                scrolled={scrolled} 
-                onClick={() => navigate("/perfil")} // Redirigir a la página de perfil
-              >
-                <MdManageAccounts /> Mi Perfil
-              </DropdownItem>
+                  <DropdownItem 
+                    scrolled={scrolled}
+                    onClick={() => navigate("/estadistica")}
+                  >
+                    <MdBarChart /> Ver Estadísticas
+                  </DropdownItem>
 
+                  {/* Opción de Administración (solo para administradores) */}
+                  {userRole === "1" && ( // Si el rol es 1 (Administrador)
+                    <DropdownItem
+                      scrolled={scrolled}
+                      onClick={() => navigate("/admin")}
+                    >
+                      <MdAdminPanelSettings /> Panel de Administración
+                    </DropdownItem>
+                  )}
 
-              <DropdownItem scrolled={scrolled}
-              onClick={() => navigate("/estadistica")}
-              >
-
-                <MdBarChart /> Ver Estadísticas
-                </DropdownItem> {/* Nueva opción */}
-              <DropdownItem scrolled={scrolled} onClick={handleLogout}><MdLogout /> Cerrar Sesión</DropdownItem>
-            </DropdownMenu>
+                  <DropdownItem scrolled={scrolled} onClick={handleLogout}>
+                    <MdLogout /> Cerrar Sesión
+                  </DropdownItem>
+                </DropdownMenu>
               </IconWrapper>
 
               <IconWrapper>
@@ -415,6 +433,11 @@ function Navbar() {
               <DropdownItem onClick={handleLogout}><MdLogout /> Cerrar Sesión</DropdownItem>
               <DropdownItem><MdSecurity /> Seguridad</DropdownItem>
               <DropdownItem><MdHelp /> Soporte</DropdownItem>
+              {userRole === "1" && (
+                <DropdownItem onClick={() => navigate("/admin")}>
+                  <MdAdminPanelSettings /> Panel de Administración
+                </DropdownItem>
+              )}
             </>
           )}
         </Sidebar>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import { MdAccountCircle, MdLogout, MdManageAccounts, MdMenu, MdClose, MdBarChart, MdHome } from "react-icons/md";
+import { MdAccountCircle, MdLogout, MdManageAccounts, MdMenu, MdClose, MdHome } from "react-icons/md";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import logo from "../img/logoss.png";
@@ -200,8 +200,8 @@ function Navbar() {
             transition={{ duration: 0.5, delay: 0.1 }}
             scrolled={scrolled}
           >
-            <RouterLink to="/estadistica" style={{ textDecoration: "none", color: "inherit" }}>
-              <MdBarChart /> Estadísticas
+            <RouterLink to="/perfil" style={{ textDecoration: "none", color: "inherit" }}>
+              <MdManageAccounts /> Ver Perfil
             </RouterLink>
           </MenuItem>
 
@@ -255,8 +255,8 @@ function Navbar() {
 
           {/* Opción: Estadísticas en el menú móvil */}
           <MenuItem>
-            <RouterLink to="/estadisticas" style={{ textDecoration: "none", color: "inherit" }} onClick={() => setSidebarOpen(false)}>
-              <MdBarChart /> Estadísticas
+            <RouterLink to="/perfil" style={{ textDecoration: "none", color: "inherit" }} onClick={() => setSidebarOpen(false)}>
+              <MdManageAccounts /> Ver Perfil
             </RouterLink>
           </MenuItem>
 

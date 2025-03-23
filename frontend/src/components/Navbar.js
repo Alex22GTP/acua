@@ -354,7 +354,12 @@ function Navbar() {
               </DropdownItem>
 
 
-              <DropdownItem scrolled={scrolled}><MdBarChart /> Ver Estadísticas</DropdownItem> {/* Nueva opción */}
+              <DropdownItem scrolled={scrolled}
+              onClick={() => navigate("/estadistica")}
+              >
+
+                <MdBarChart /> Ver Estadísticas
+                </DropdownItem> {/* Nueva opción */}
               <DropdownItem scrolled={scrolled} onClick={handleLogout}><MdLogout /> Cerrar Sesión</DropdownItem>
             </DropdownMenu>
               </IconWrapper>

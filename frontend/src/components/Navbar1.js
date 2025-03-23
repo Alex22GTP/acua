@@ -212,7 +212,7 @@ function Navbar() {
     transition={{ duration: 0.5, delay: 0.1 }}
     scrolled={scrolled}
   >
-    <RouterLink to="/estadisticas" style={{ textDecoration: "none", color: "inherit" }}>
+    <RouterLink to="/estadistica" style={{ textDecoration: "none", color: "inherit" }}>
       <MdBarChart /> Estadísticas
     </RouterLink>
   </MenuItem>

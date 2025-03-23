@@ -206,7 +206,7 @@ app.post("/api/login", async (req, res) => {
   try {
     // Buscar usuario en la BD
     const result = await pool.query(
-      "SELECT id_usuario, nombre, correo, contraseña FROM usuario WHERE correo = $1", 
+      "SELECT id_usuario, nombre, correo, contraseña, id_rol FROM usuario WHERE correo = $1", 
       [email]
     );
 
@@ -222,12 +222,13 @@ app.post("/api/login", async (req, res) => {
       return res.status(400).json({ message: "Correo o contraseña incorrectos" });
     }
 
-    // Devolver el nombre del usuario junto con el userId
+    // Devolver el nombre del usuario, userId y id_rol
     res.json({ 
       success: true, 
       message: "Inicio de sesión exitoso", 
       userId: user.id_usuario, 
-      nombre: user.nombre // Añadir el nombre del usuario
+      nombre: user.nombre, // Añadir el nombre del usuario
+      id_rol: user.id_rol  // Añadir el id_rol del usuario
     });
   } catch (error) {
     console.error("Error en el login:", error);

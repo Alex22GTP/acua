@@ -127,10 +127,10 @@ app.post("/api/subir-categoria", upload.single("imagen"), async (req, res) => {
 });
 
 // Ruta para obtener un escenario con sus opciones
-// Ruta para obtener todos los escenarios de un catálogo
 app.get("/escenarios/:id_catalogo/:id", async (req, res) => {
   const { id_catalogo, id } = req.params;
   console.log(`Solicitando escenario con id_catalogo: ${id_catalogo}, id_escenario: ${id}`);
+
 
   try {
     const escenarioQuery = `
@@ -138,22 +138,44 @@ app.get("/escenarios/:id_catalogo/:id", async (req, res) => {
       FROM escenarios e
       WHERE e.id_escenario = $1 AND e.id_catalogo = $2
     `;
-    console.log("Consulta SQL:", escenarioQuery, [id, id_catalogo]);
+    const opcionesQuery = `
+      SELECT o.id_opcion, o.descripcion, o.solucion, o.retroalimentacion
+      FROM opciones o
+      WHERE o.id_escenario = $1
+    `;
 
     const escenarioResult = await pool.query(escenarioQuery, [id, id_catalogo]);
     console.log("Resultado de la consulta:", escenarioResult.rows);
+    const opcionesResult = await pool.query(opcionesQuery, [id]);
 
     if (escenarioResult.rows.length === 0) {
       console.error("Escenario no encontrado en la BD");
       return res.status(404).json({ error: "Escenario no encontrado" });
     }
 
-    // Resto del código...
+    // Convertir la imagen BYTEA a base64
+    const imagenBase64 = escenarioResult.rows[0].imagen
+      ? Buffer.from(escenarioResult.rows[0].imagen).toString("base64")
+      : null;
+
+    // Formatear la respuesta según lo que espera el cliente
+    const response = {
+      escenario: {
+        id_escenario: escenarioResult.rows[0].id_escenario,
+        titulo: escenarioResult.rows[0].titulo,
+        descripcion: escenarioResult.rows[0].descripcion,
+        imagen: imagenBase64 ? `data:image/png;base64,${imagenBase64}` : null, // Devuelve la imagen como data URL
+      },
+      opciones: opcionesResult.rows,
+    };
+
+    res.json(response);
   } catch (error) {
     console.error("Error al obtener el escenario:", error);
     res.status(500).json({ error: "Error del servidor" });
   }
 });
+
 
 const bcrypt = require("bcrypt");
 
@@ -619,5 +641,30 @@ app.get("/api/admin/catalogos/:id/escenarios", async (req, res) => {
   } catch (error) {
     console.error("Error al obtener escenarios:", error);
     res.status(500).json({ message: "Error en el servidor" });
+  }
+});
+
+app.get("/escenarios/:id_catalogo", async (req, res) => {
+  const { id_catalogo } = req.params;
+  console.log(`Solicitando escenarios para el catálogo: ${id_catalogo}`);
+
+  try {
+    const escenariosQuery = `
+      SELECT e.id_escenario, e.titulo, e.descripcion, e.imagen
+      FROM escenarios e
+      WHERE e.id_catalogo = $1
+    `;
+    const escenariosResult = await pool.query(escenariosQuery, [id_catalogo]);
+    console.log("Resultado de la consulta:", escenariosResult.rows);
+
+    if (escenariosResult.rows.length === 0) {
+      console.error("No se encontraron escenarios para este catálogo");
+      return res.status(404).json({ error: "No se encontraron escenarios para este catálogo" });
+    }
+
+    res.json({ escenarios: escenariosResult.rows });
+  } catch (error) {
+    console.error("Error al obtener los escenarios:", error);
+    res.status(500).json({ error: "Error del servidor" });
   }
 });

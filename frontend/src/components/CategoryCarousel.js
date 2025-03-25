@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // Importa useNavigate
+import { useNavigate } from "react-router-dom";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
@@ -106,14 +106,67 @@ const SectionDescription = styled.p`
   line-height: 1.6;
 `;
 
+// Estilos para el modal
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+`;
+
+const ModalContent = styled.div`
+  background-color: white;
+  padding: 2rem;
+  border-radius: 8px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+`;
+
+const ModalTitle = styled.h3`
+  color: #1d3557;
+  margin-bottom: 1rem;
+`;
+
+const ModalButton = styled.button`
+  background-color: #457b9d;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  margin-top: 1rem;
+  transition: background-color 0.3s;
+
+  &:hover {
+    background-color: #1d3557;
+  }
+`;
+
 const MostrarCatalogos = () => {
   const navigate = useNavigate();
   const [catalogos, setCatalogos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+
+  // Verificar si el usuario está autenticado
+  const isAuthenticated = localStorage.getItem("userId") !== null;
 
   // Función para manejar el clic en una imagen
   const handleClick = async (id_catalogo) => {
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+      return;
+    }
+
     try {
       // Obtener todos los escenarios del catálogo
       const response = await fetch(`http://localhost:5000/escenarios/${id_catalogo}`);
@@ -129,6 +182,11 @@ const MostrarCatalogos = () => {
     } catch (error) {
       console.error("Error al obtener los escenarios:", error);
     }
+  };
+
+  const handleLoginRedirect = () => {
+    navigate("/login");
+    setShowLoginModal(false);
   };
 
   useEffect(() => {
@@ -212,7 +270,7 @@ const MostrarCatalogos = () => {
   const primeros5Catalogos = catalogos.slice(0, 5);
 
   return (
-    <div id="catalogos" style={{ padding: "20px", position: "relative" }}> {/* Asegúrate de que el ID esté aquí */}
+    <div id="catalogos" style={{ padding: "20px", position: "relative" }}>
       {/* Título y descripción para "Catálogos" */}
       <SectionTitle>Catálogos</SectionTitle>
       <SectionDescription>
@@ -223,20 +281,20 @@ const MostrarCatalogos = () => {
       <Slider {...settings}>
         {catalogos.map((catalogo) => (
           <div key={catalogo.id_catalogo} style={{ padding: "10px" }}>
-            <CircleContainer onClick={() => handleClick(catalogo.id_catalogo)}> {/* Agrega onClick */}
+            <CircleContainer onClick={() => handleClick(catalogo.id_catalogo)}>
               {catalogo.imagen && (
                 <CircleImage
                   src={catalogo.imagen}
                   alt={`Imagen de ${catalogo.nombre}`}
                   onError={(e) => {
                     console.error("Error al cargar la imagen:", e);
-                    e.target.style.display = "none"; // Oculta la imagen si hay un error
+                    e.target.style.display = "none";
                   }}
                 />
               )}
-              <CircleOverlay /> {/* Overlay sin texto */}
+              <CircleOverlay />
             </CircleContainer>
-            <Title>{catalogo.nombre}</Title> {/* Título debajo del círculo */}
+            <Title>{catalogo.nombre}</Title>
           </div>
         ))}
       </Slider>
@@ -251,23 +309,36 @@ const MostrarCatalogos = () => {
       <Slider {...settings}>
         {primeros5Catalogos.map((catalogo) => (
           <div key={catalogo.id_catalogo} style={{ padding: "10px" }}>
-            <CircleContainer onClick={() => handleClick(catalogo.id_catalogo)}> {/* Agrega onClick */}
+            <CircleContainer onClick={() => handleClick(catalogo.id_catalogo)}>
               {catalogo.imagen && (
                 <CircleImage
                   src={catalogo.imagen}
                   alt={`Imagen de ${catalogo.nombre}`}
                   onError={(e) => {
                     console.error("Error al cargar la imagen:", e);
-                    e.target.style.display = "none"; // Oculta la imagen si hay un error
+                    e.target.style.display = "none";
                   }}
                 />
               )}
-              <CircleOverlay /> {/* Overlay sin texto */}
+              <CircleOverlay />
             </CircleContainer>
-            <Title>{catalogo.nombre}</Title> {/* Título debajo del círculo */}
+            <Title>{catalogo.nombre}</Title>
           </div>
         ))}
       </Slider>
+
+      {/* Modal de inicio de sesión */}
+      {showLoginModal && (
+        <ModalOverlay>
+          <ModalContent>
+            <ModalTitle>Para acceder a los escenarios</ModalTitle>
+            <p>Debes iniciar sesión primero. ¿Deseas ir a la página de inicio de sesión?</p>
+            <ModalButton onClick={handleLoginRedirect}>
+              Ir a Iniciar Sesión
+            </ModalButton>
+          </ModalContent>
+        </ModalOverlay>
+      )}
     </div>
   );
 };

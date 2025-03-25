@@ -251,7 +251,7 @@ const MostrarCatalogos = () => {
       <Slider {...settings}>
         {primeros5Catalogos.map((catalogo) => (
           <div key={catalogo.id_catalogo} style={{ padding: "10px" }}>
-            <CircleContainer>
+            <CircleContainer onClick={() => handleClick(catalogo.id_catalogo)}> {/* Agrega onClick */}
               {catalogo.imagen && (
                 <CircleImage
                   src={catalogo.imagen}

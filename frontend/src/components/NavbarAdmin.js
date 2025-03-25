@@ -7,7 +7,6 @@ import { motion } from "framer-motion";
 import logo from "../img/logoss.png";
 import { createGlobalStyle } from 'styled-components';
 
-// Importar la fuente de Google Fonts
 const GlobalStyle = createGlobalStyle`
   @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
 `;
@@ -226,7 +225,7 @@ const UserName = styled.span`
   color: ${({ scrolled }) => (scrolled ? "#ffffff" : "#1d3557")};
   font-family: 'Poppins', sans-serif;
 `;
-// Estilos (omitiendo los estilos repetidos para simplificar)
+
 
 function Navbar() {
   const [activeMenu, setActiveMenu] = useState(null);

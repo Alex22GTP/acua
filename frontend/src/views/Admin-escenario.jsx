@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { MdAdd, MdDelete, MdEdit, MdImage, MdArrowBack, MdRefresh, MdClose, MdCheck } from 'react-icons/md';
+import { MdAdd, MdDelete, MdEdit, MdImage, MdArrowBack, MdClose, MdCheck } from 'react-icons/md';
 import Navbar from '../components/NavbarAdmin';
 
-// Estilos basados en el diseño anterior
+// Estilos
 const AdminContainer = styled.div`
   padding: 2rem;
   max-width: 1200px;
@@ -46,12 +46,50 @@ const Card = styled.div`
   overflow: hidden;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
-  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
 
   &:hover {
     transform: translateY(-5px);
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
   }
+`;
+
+const CardImageContainer = styled.div`
+  height: 180px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f5f5;
+`;
+
+const CardImage = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+
+  &:hover {
+    transform: scale(1.05);
+  }
+`;
+
+const NoImagePlaceholder = styled.div`
+  height: 180px;
+  background-color: #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+`;
+
+const CardContentWrapper = styled.div`
+  padding: 1.5rem;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
 `;
 
 const CardTitle = styled.h4`
@@ -63,12 +101,13 @@ const CardTitle = styled.h4`
 const CardContent = styled.div`
   color: #333;
   margin-bottom: 1rem;
+  flex-grow: 1;
 `;
 
 const CardActions = styled.div`
   display: flex;
   gap: 0.5rem;
-  margin-top: 1rem;
+  margin-top: auto;
 `;
 
 const ActionButton = styled.button`
@@ -159,7 +198,29 @@ const FormButton = styled.button`
   }
 `;
 
-// Estilos del modal (similar a los anteriores)
+const ImagePreview = styled.img`
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  border: 1px solid #ddd;
+`;
+
+const ImageContainer = styled.div`
+  margin: 1rem 0;
+  text-align: center;
+`;
+
+const MaxOptionsMessage = styled.div`
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 1.5rem;
+  text-align: center;
+  color: #457b9d;
+  border-left: 4px solid #e63946;
+`;
+
 const ModalOverlay = styled.div`
   position: fixed;
   top: 0;
@@ -260,7 +321,9 @@ const ScenarioManagement = () => {
   const [formData, setFormData] = useState({
     titulo: '',
     descripcion: '',
-    id_catalogo: ''
+    id_catalogo: '',
+    imagen: null,
+    imagenPrevia: null
   });
   const [optionForm, setOptionForm] = useState({
     descripcion: '',
@@ -284,11 +347,16 @@ const ScenarioManagement = () => {
       }
       
       const data = await response.json();
-      setScenarios(data);
+      // Asegurarse de que cada escenario tenga la propiedad 'imagen'
+      const scenariosWithImageFlag = data.map(scenario => ({
+        ...scenario,
+        imagen: scenario.imagen !== null // Convertir a booleano para saber si tiene imagen
+      }));
+      setScenarios(scenariosWithImageFlag);
     } catch (error) {
       console.error('Error al obtener escenarios:', error);
       showModalMessage('Error', 'No se pudieron cargar los escenarios');
-      setScenarios([]); // Asegurarse de que el estado no sea undefined
+      setScenarios([]);
     } finally {
       setLoading(false);
     }
@@ -297,13 +365,27 @@ const ScenarioManagement = () => {
   // Obtener opciones de un escenario
   const fetchOptions = async (scenarioId) => {
     try {
-        const response = await fetch(`http://localhost:5000/api/admin/escenarios/${scenarioId}/opciones`);
-        const data = await response.json();
+      const response = await fetch(`http://localhost:5000/api/admin/escenarios/${scenarioId}/opciones`);
+      
+      if (!response.ok) {
+        throw new Error(`Error HTTP! estado: ${response.status}`);
+      }
+      
+      const data = await response.json();
       setOptions(data);
       setSelectedScenario(scenarioId);
+      
+      if (data.length >= 4) {
+        showModalMessage(
+          'Información', 
+          'Este escenario ya tiene el máximo de 4 opciones permitidas',
+          true
+        );
+      }
     } catch (error) {
       console.error('Error al obtener opciones:', error);
       showModalMessage('Error', 'No se pudieron cargar las opciones');
+      setOptions([]);
     }
   };
 
@@ -390,12 +472,43 @@ const ScenarioManagement = () => {
     }));
   };
 
+  // Manejar cambio de imagen
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({
+          ...prev,
+          imagen: file,
+          imagenPrevia: reader.result
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // Crear/editar escenario
   const handleScenarioSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validación de campos requeridos
+    if (!formData.titulo || !formData.descripcion || !formData.id_catalogo) {
+      showModalMessage('Error', 'Todos los campos son requeridos');
+      return;
+    }
+    
     setLoading(true);
     
     try {
+      const formDataToSend = new FormData();
+      formDataToSend.append('titulo', formData.titulo);
+      formDataToSend.append('descripcion', formData.descripcion);
+      formDataToSend.append('id_catalogo', formData.id_catalogo);
+      if (formData.imagen) {
+        formDataToSend.append('imagen', formData.imagen);
+      }
+
       const method = formData.id_escenario ? 'PUT' : 'POST';
       const url = formData.id_escenario 
         ? `http://localhost:5000/api/admin/escenarios/${formData.id_escenario}`
@@ -403,8 +516,7 @@ const ScenarioManagement = () => {
 
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: formDataToSend
       });
 
       if (response.ok) {
@@ -417,7 +529,7 @@ const ScenarioManagement = () => {
         );
       } else {
         const errorData = await response.json();
-        showModalMessage('Error', errorData.message || 'Error al procesar la solicitud');
+        showModalMessage('Error', errorData.error || 'Error al procesar la solicitud');
       }
     } catch (error) {
       console.error('Error:', error);
@@ -430,6 +542,16 @@ const ScenarioManagement = () => {
   // Crear/editar opción
   const handleOptionSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validación de máximo de opciones
+    if (options.length >= 4) {
+      showModalMessage(
+        'Límite alcanzado',
+        'No se pueden agregar más de 4 opciones por escenario'
+      );
+      return;
+    }
+    
     setLoading(true);
     
     try {
@@ -474,7 +596,9 @@ const ScenarioManagement = () => {
     setFormData({
       titulo: '',
       descripcion: '',
-      id_catalogo: ''
+      id_catalogo: '',
+      imagen: null,
+      imagenPrevia: null
     });
   };
 
@@ -493,7 +617,10 @@ const ScenarioManagement = () => {
       id_escenario: scenario.id_escenario,
       titulo: scenario.titulo,
       descripcion: scenario.descripcion,
-      id_catalogo: scenario.id_catalogo
+      id_catalogo: scenario.id_catalogo,
+      imagen: null,
+      imagenPrevia: scenario.imagen ? 
+        `http://localhost:5000/api/admin/escenarios/${scenario.id_escenario}/imagen` : null
     });
   };
 
@@ -521,32 +648,52 @@ const ScenarioManagement = () => {
           <CardGrid>
             {scenarios.map(scenario => (
               <Card key={scenario.id_escenario}>
-                <CardTitle>{scenario.titulo}</CardTitle>
-                <CardContent>
-                  <p>{scenario.descripcion}</p>
-                  <p><strong>Catálogo ID:</strong> {scenario.id_catalogo}</p>
-                </CardContent>
-                <CardActions>
-                  <ActionButton 
-                    bgColor="#4CAF50" 
-                    hoverColor="#45a049"
-                    onClick={() => editScenario(scenario)}
-                  >
-                    <MdEdit /> Editar
-                  </ActionButton>
-                  <ActionButton 
-                    bgColor="#f44336" 
-                    hoverColor="#d32f2f"
-                    onClick={() => confirmDelete(scenario.id_escenario, 'scenario')}
-                  >
-                    <MdDelete /> Eliminar
-                  </ActionButton>
-                  <ActionButton 
-                    onClick={() => fetchOptions(scenario.id_escenario)}
-                  >
-                    Ver Opciones
-                  </ActionButton>
-                </CardActions>
+                {scenario.imagen ? (
+                  <CardImageContainer>
+                    <CardImage
+                      src={`http://localhost:5000/api/admin/escenarios/${scenario.id_escenario}/imagen`}
+                      alt={scenario.titulo}
+                      onError={(e) => {
+                        e.target.onerror = null; 
+                        e.target.src = 'https://via.placeholder.com/300x180?text=Imagen+no+disponible';
+                      }}
+                    />
+                  </CardImageContainer>
+                ) : (
+                  <NoImagePlaceholder>
+                    <MdImage size={48} />
+                    <span style={{ marginTop: '10px' }}>Sin imagen</span>
+                  </NoImagePlaceholder>
+                )}
+                
+                <CardContentWrapper>
+                  <CardTitle>{scenario.titulo}</CardTitle>
+                  <CardContent>
+                    <p>{scenario.descripcion}</p>
+                    <p><strong>Catálogo ID:</strong> {scenario.id_catalogo}</p>
+                  </CardContent>
+                  <CardActions>
+                    <ActionButton 
+                      bgColor="#4CAF50" 
+                      hoverColor="#45a049"
+                      onClick={() => editScenario(scenario)}
+                    >
+                      <MdEdit /> Editar
+                    </ActionButton>
+                    <ActionButton 
+                      bgColor="#f44336" 
+                      hoverColor="#d32f2f"
+                      onClick={() => confirmDelete(scenario.id_escenario, 'scenario')}
+                    >
+                      <MdDelete /> Eliminar
+                    </ActionButton>
+                    <ActionButton 
+                      onClick={() => fetchOptions(scenario.id_escenario)}
+                    >
+                      Ver Opciones
+                    </ActionButton>
+                  </CardActions>
+                </CardContentWrapper>
               </Card>
             ))}
           </CardGrid>
@@ -580,6 +727,30 @@ const ScenarioManagement = () => {
                 onChange={handleInputChange}
                 required
               />
+              
+              <FormInput
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+              />
+
+              {formData.imagenPrevia && (
+                <ImageContainer>
+                  <ImagePreview 
+                    src={formData.imagenPrevia} 
+                    alt="Vista previa" 
+                  />
+                  <ActionButton
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, imagen: null, imagenPrevia: null }))}
+                    bgColor="#f44336"
+                    hoverColor="#d32f2f"
+                  >
+                    <MdDelete /> Eliminar imagen
+                  </ActionButton>
+                </ImageContainer>
+              )}
+
               <FormButton type="submit" disabled={loading}>
                 {formData.id_escenario ? <MdCheck /> : <MdAdd />}
                 {loading ? 'Procesando...' : formData.id_escenario ? 'Actualizar' : 'Crear'}
@@ -605,7 +776,7 @@ const ScenarioManagement = () => {
                 onClick={() => setSelectedScenario(null)} 
                 style={{ cursor: "pointer" }} 
               />{" "}
-              Opciones del Escenario
+              Opciones del Escenario ({options.length}/4)
             </SectionHeader>
 
             {/* Lista de opciones */}
@@ -637,70 +808,60 @@ const ScenarioManagement = () => {
               ))}
             </CardGrid>
 
-            {/* Formulario de opción */}
-            {options.length < 4 && (
-
-            <FormContainer>
-              <SectionHeader>
-                <MdAdd /> {selectedOption ? 'Editar' : 'Agregar'} Opción
-              </SectionHeader>
-              <form onSubmit={handleOptionSubmit}>
-                <FormInput
-                  type="text"
-                  name="descripcion"
-                  placeholder="Descripción"
-                  value={optionForm.descripcion}
-                  onChange={handleOptionChange}
-                  required
-                />
-                <div style={{ marginBottom: '1rem' }}>
-                  <label>
-                    <input
-                      type="checkbox"
-                      name="solucion"
-                      checked={optionForm.solucion}
-                      onChange={handleOptionChange}
-                      style={{ marginRight: '0.5rem' }}
-                    />
-                    ¿Es solución correcta?
-                  </label>
-                </div>
-                <FormTextarea
-                  name="retroalimentacion"
-                  placeholder="Retroalimentación"
-                  value={optionForm.retroalimentacion}
-                  onChange={handleOptionChange}
-                  required
-                />
-                <FormButton type="submit" disabled={loading}>
-                  {selectedOption ? <MdCheck /> : <MdAdd />}
-                  {loading ? 'Procesando...' : selectedOption ? 'Actualizar' : 'Crear'}
-                </FormButton>
-                {selectedOption && (
-                  <ActionButton 
-                    type="button"
-                    onClick={resetOptionForm}
-                    style={{ marginLeft: '0.5rem' }}
-                  >
-                    <MdClose /> Cancelar
-                  </ActionButton>
-                )}
-              </form>
-            </FormContainer>
+            {/* Formulario de opción - Solo se muestra si hay menos de 4 opciones */}
+            {options.length < 4 ? (
+              <FormContainer>
+                <SectionHeader>
+                  <MdAdd /> {selectedOption ? 'Editar' : 'Agregar'} Opción
+                </SectionHeader>
+                <form onSubmit={handleOptionSubmit}>
+                  <FormInput
+                    type="text"
+                    name="descripcion"
+                    placeholder="Descripción"
+                    value={optionForm.descripcion}
+                    onChange={handleOptionChange}
+                    required
+                  />
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        name="solucion"
+                        checked={optionForm.solucion}
+                        onChange={handleOptionChange}
+                        style={{ marginRight: '0.5rem' }}
+                      />
+                      ¿Es solución correcta?
+                    </label>
+                  </div>
+                  <FormTextarea
+                    name="retroalimentacion"
+                    placeholder="Retroalimentación"
+                    value={optionForm.retroalimentacion}
+                    onChange={handleOptionChange}
+                    required
+                  />
+                  <FormButton type="submit" disabled={loading}>
+                    {selectedOption ? <MdCheck /> : <MdAdd />}
+                    {loading ? 'Procesando...' : selectedOption ? 'Actualizar' : 'Crear'}
+                  </FormButton>
+                  {selectedOption && (
+                    <ActionButton 
+                      type="button"
+                      onClick={resetOptionForm}
+                      style={{ marginLeft: '0.5rem' }}
+                    >
+                      <MdClose /> Cancelar
+                    </ActionButton>
+                  )}
+                </form>
+              </FormContainer>
+            ) : (
+              <MaxOptionsMessage>
+                Este escenario ya tiene el máximo de 4 opciones permitidas.
+              </MaxOptionsMessage>
             )}
-              {/* Mensaje cuando se alcanza el límite */}
-    {options.length >= 4 && (
-      <div style={{
-        background: '#f8f9fa',
-        padding: '1rem',
-        borderRadius: '8px',
-        marginTop: '1.5rem',
-        textAlign: 'center',
-        color: '#457b9d'
-      }}>
-        <p>Este escenario ya tiene el máximo de 4 opciones permitidas.</p>
-      </div>
-    )}
           </Section>
         )}
       </AdminContainer>

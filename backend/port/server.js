@@ -32,7 +32,29 @@ app.get("/", (req, res) => {
 
 // Configuración de Multer para manejar imágenes en memoria
 const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+
+
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Solo se permiten imágenes'), false);
+  }
+};
+
+// Configuración de upload para escenarios
+const uploadEscenario = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // Límite de 5MB
+  fileFilter: fileFilter
+});
+
+// Configuración de upload para imágenes generales
+const upload = multer({ 
+  storage: storage,
+  fileFilter: fileFilter
+});
+
 
 // Subir imagen de prueba
 app.post("/subir-imagen-prueba", upload.single("imagen"), async (req, res) => {
@@ -754,13 +776,15 @@ app.get('/api/admin/escenarios/:id/opciones', async (req, res) => {
 });
 
 // Crear/Actualizar escenario
-app.post('/api/admin/escenarios', async (req, res) => {
+app.post('/api/admin/escenarios', uploadEscenario.single('imagen'), async (req, res) => {
   const { titulo, descripcion, id_catalogo } = req.body;
+  const imagenBuffer = req.file?.buffer;
+
   try {
     const result = await pool.query(
-      `INSERT INTO escenarios (titulo, descripcion, id_catalogo)
-       VALUES ($1, $2, $3) RETURNING *`,
-      [titulo, descripcion, id_catalogo]
+      `INSERT INTO escenarios (titulo, descripcion, id_catalogo, imagen)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [titulo, descripcion, id_catalogo, imagenBuffer]
     );
     res.json(result.rows[0]);
   } catch (error) {
@@ -769,16 +793,29 @@ app.post('/api/admin/escenarios', async (req, res) => {
   }
 });
 
-app.put('/api/admin/escenarios/:id', async (req, res) => {
+
+// Actualizar escenario (con o sin imagen)
+app.put('/api/admin/escenarios/:id', uploadEscenario.single('imagen'), async (req, res) => {
   const { id } = req.params;
   const { titulo, descripcion, id_catalogo } = req.body;
+  const imagenBuffer = req.file?.buffer;
+
   try {
-    const result = await pool.query(
-      `UPDATE escenarios 
-       SET titulo = $1, descripcion = $2, id_catalogo = $3
-       WHERE id_escenario = $4 RETURNING *`,
-      [titulo, descripcion, id_catalogo, id]
-    );
+    // Si se subió una nueva imagen, actualizarla, de lo contrario mantener la existente
+    let query, params;
+    if (imagenBuffer) {
+      query = `UPDATE escenarios 
+               SET titulo = $1, descripcion = $2, id_catalogo = $3, imagen = $4
+               WHERE id_escenario = $5 RETURNING *`;
+      params = [titulo, descripcion, id_catalogo, imagenBuffer, id];
+    } else {
+      query = `UPDATE escenarios 
+               SET titulo = $1, descripcion = $2, id_catalogo = $3
+               WHERE id_escenario = $4 RETURNING *`;
+      params = [titulo, descripcion, id_catalogo, id];
+    }
+
+    const result = await pool.query(query, params);
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Error al actualizar escenario:', error);
@@ -842,5 +879,27 @@ app.delete('/api/admin/opciones/:id', async (req, res) => {
   } catch (error) {
     console.error('Error al eliminar opción:', error);
     res.status(500).json({ error: 'Error al eliminar opción' });
+  }
+});
+
+// Ruta para obtener imagen de escenario
+app.get('/api/admin/escenarios/:id/imagen', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      "SELECT imagen FROM escenarios WHERE id_escenario = $1",
+      [id]
+    );
+
+    if (result.rows.length === 0 || !result.rows[0].imagen) {
+      return res.status(404).json({ error: "Imagen no encontrada" });
+    }
+
+    const imagenBuffer = result.rows[0].imagen;
+    res.setHeader("Content-Type", "image/jpeg");
+    res.send(imagenBuffer);
+  } catch (error) {
+    console.error("Error al obtener imagen:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 });

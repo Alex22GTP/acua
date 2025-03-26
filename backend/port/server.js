@@ -717,3 +717,130 @@ app.delete('/api/admin/users/:id', async (req, res) => {
     res.status(500).json({ message: 'Error en el servidor' });
   }
 });
+
+
+
+// Obtener todos los escenarios (para administración)
+app.get('/api/admin/escenarios', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT e.id_escenario, e.titulo, e.descripcion, e.id_catalogo, c.nombre as nombre_catalogo
+      FROM escenarios e
+      JOIN catalogos c ON e.id_catalogo = c.id_catalogo
+      ORDER BY e.id_escenario
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error al obtener escenarios:', error);
+    res.status(500).json({ error: 'Error al obtener escenarios' });
+  }
+});
+
+// Obtener opciones de un escenario (para administración)
+app.get('/api/admin/escenarios/:id/opciones', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(`
+      SELECT id_opcion, descripcion, solucion, retroalimentacion
+      FROM opciones
+      WHERE id_escenario = $1
+      ORDER BY id_opcion
+    `, [id]);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error al obtener opciones:', error);
+    res.status(500).json({ error: 'Error al obtener opciones' });
+  }
+});
+
+// Crear/Actualizar escenario
+app.post('/api/admin/escenarios', async (req, res) => {
+  const { titulo, descripcion, id_catalogo } = req.body;
+  try {
+    const result = await pool.query(
+      `INSERT INTO escenarios (titulo, descripcion, id_catalogo)
+       VALUES ($1, $2, $3) RETURNING *`,
+      [titulo, descripcion, id_catalogo]
+    );
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error al crear escenario:', error);
+    res.status(500).json({ error: 'Error al crear escenario' });
+  }
+});
+
+app.put('/api/admin/escenarios/:id', async (req, res) => {
+  const { id } = req.params;
+  const { titulo, descripcion, id_catalogo } = req.body;
+  try {
+    const result = await pool.query(
+      `UPDATE escenarios 
+       SET titulo = $1, descripcion = $2, id_catalogo = $3
+       WHERE id_escenario = $4 RETURNING *`,
+      [titulo, descripcion, id_catalogo, id]
+    );
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error al actualizar escenario:', error);
+    res.status(500).json({ error: 'Error al actualizar escenario' });
+  }
+});
+
+// Eliminar escenario
+app.delete('/api/admin/escenarios/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Primero eliminar las opciones relacionadas
+    await pool.query('DELETE FROM opciones WHERE id_escenario = $1', [id]);
+    // Luego eliminar el escenario
+    await pool.query('DELETE FROM escenarios WHERE id_escenario = $1', [id]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error al eliminar escenario:', error);
+    res.status(500).json({ error: 'Error al eliminar escenario' });
+  }
+});
+
+// Operaciones CRUD para opciones
+app.post('/api/admin/opciones', async (req, res) => {
+  const { descripcion, solucion, retroalimentacion, id_escenario } = req.body;
+  try {
+    const result = await pool.query(
+      `INSERT INTO opciones (descripcion, solucion, retroalimentacion, id_escenario)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [descripcion, solucion, retroalimentacion, id_escenario]
+    );
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error al crear opción:', error);
+    res.status(500).json({ error: 'Error al crear opción' });
+  }
+});
+
+app.put('/api/admin/opciones/:id', async (req, res) => {
+  const { id } = req.params;
+  const { descripcion, solucion, retroalimentacion } = req.body;
+  try {
+    const result = await pool.query(
+      `UPDATE opciones 
+       SET descripcion = $1, solucion = $2, retroalimentacion = $3
+       WHERE id_opcion = $4 RETURNING *`,
+      [descripcion, solucion, retroalimentacion, id]
+    );
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error al actualizar opción:', error);
+    res.status(500).json({ error: 'Error al actualizar opción' });
+  }
+});
+
+app.delete('/api/admin/opciones/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM opciones WHERE id_opcion = $1', [id]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error al eliminar opción:', error);
+    res.status(500).json({ error: 'Error al eliminar opción' });
+  }
+});

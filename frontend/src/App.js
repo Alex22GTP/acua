@@ -10,6 +10,7 @@ import CambiarPass from './views/ChangePass';
 import Estadistica from './views/Estadistica';
 import Admin from './views/Admin';
 import AdminUser from './views/Admin_user';
+import AdminEsc from './views/Admin-escenario';
 
 
 
@@ -27,6 +28,7 @@ function App() {
         <Route path="/estadistica" element={<Estadistica />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/admin-user" element={<AdminUser/>} />
+        <Route path="/admin-esc" element={<AdminEsc/>} />
 
 
       </Routes>

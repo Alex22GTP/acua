@@ -668,3 +668,52 @@ app.get("/escenarios/:id_catalogo", async (req, res) => {
     res.status(500).json({ error: "Error del servidor" });
   }
 });
+
+
+
+// Obtener todos los usuarios
+app.get('/api/admin/users', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT id_usuario, nombre, apellido_paterno, apellido_materno, correo, id_rol 
+      FROM usuario
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error al obtener usuarios:', error);
+    res.status(500).json({ message: 'Error en el servidor' });
+  }
+});
+
+
+// Crear nuevo usuario
+app.post('/api/admin/users', async (req, res) => {
+  const { nombre, apellido_paterno, apellido_materno, correo, password, id_rol } = req.body;
+  
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const result = await pool.query(
+      `INSERT INTO usuario 
+      (nombre, apellido_paterno, apellido_materno, correo, contraseña, id_rol) 
+      VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [nombre, apellido_paterno, apellido_materno, correo, hashedPassword, id_rol]
+    );
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error al crear usuario:', error);
+    res.status(500).json({ message: 'Error en el servidor' });
+  }
+});
+
+
+// Eliminar usuario
+app.delete('/api/admin/users/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM usuario WHERE id_usuario = $1', [id]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error al eliminar usuario:', error);
+    res.status(500).json({ message: 'Error en el servidor' });
+  }
+});

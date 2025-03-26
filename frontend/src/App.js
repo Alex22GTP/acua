@@ -9,6 +9,7 @@ import Perfil from './views/Perfil';
 import CambiarPass from './views/ChangePass';
 import Estadistica from './views/Estadistica';
 import Admin from './views/Admin';
+import AdminUser from './views/Admin_user';
 
 
 
@@ -25,6 +26,7 @@ function App() {
         <Route path="/cambiarpass" element={<CambiarPass />} />
         <Route path="/estadistica" element={<Estadistica />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/admin-user" element={<AdminUser/>} />
 
 
       </Routes>

@@ -127,10 +127,10 @@ app.post("/api/subir-categoria", upload.single("imagen"), async (req, res) => {
 });
 
 // Ruta para obtener un escenario con sus opciones
-// Ruta para obtener todos los escenarios de un catálogo
 app.get("/escenarios/:id_catalogo/:id", async (req, res) => {
   const { id_catalogo, id } = req.params;
   console.log(`Solicitando escenario con id_catalogo: ${id_catalogo}, id_escenario: ${id}`);
+
 
   try {
     const escenarioQuery = `
@@ -138,22 +138,44 @@ app.get("/escenarios/:id_catalogo/:id", async (req, res) => {
       FROM escenarios e
       WHERE e.id_escenario = $1 AND e.id_catalogo = $2
     `;
-    console.log("Consulta SQL:", escenarioQuery, [id, id_catalogo]);
+    const opcionesQuery = `
+      SELECT o.id_opcion, o.descripcion, o.solucion, o.retroalimentacion
+      FROM opciones o
+      WHERE o.id_escenario = $1
+    `;
 
     const escenarioResult = await pool.query(escenarioQuery, [id, id_catalogo]);
     console.log("Resultado de la consulta:", escenarioResult.rows);
+    const opcionesResult = await pool.query(opcionesQuery, [id]);
 
     if (escenarioResult.rows.length === 0) {
       console.error("Escenario no encontrado en la BD");
       return res.status(404).json({ error: "Escenario no encontrado" });
     }
 
-    // Resto del código...
+    // Convertir la imagen BYTEA a base64
+    const imagenBase64 = escenarioResult.rows[0].imagen
+      ? Buffer.from(escenarioResult.rows[0].imagen).toString("base64")
+      : null;
+
+    // Formatear la respuesta según lo que espera el cliente
+    const response = {
+      escenario: {
+        id_escenario: escenarioResult.rows[0].id_escenario,
+        titulo: escenarioResult.rows[0].titulo,
+        descripcion: escenarioResult.rows[0].descripcion,
+        imagen: imagenBase64 ? `data:image/png;base64,${imagenBase64}` : null, // Devuelve la imagen como data URL
+      },
+      opciones: opcionesResult.rows,
+    };
+
+    res.json(response);
   } catch (error) {
     console.error("Error al obtener el escenario:", error);
     res.status(500).json({ error: "Error del servidor" });
   }
 });
+
 
 const bcrypt = require("bcrypt");
 
@@ -206,7 +228,7 @@ app.post("/api/login", async (req, res) => {
   try {
     // Buscar usuario en la BD
     const result = await pool.query(
-      "SELECT id_usuario, nombre, correo, contraseña FROM usuario WHERE correo = $1", 
+      "SELECT id_usuario, nombre, correo, contraseña, id_rol FROM usuario WHERE correo = $1", 
       [email]
     );
 
@@ -222,12 +244,13 @@ app.post("/api/login", async (req, res) => {
       return res.status(400).json({ message: "Correo o contraseña incorrectos" });
     }
 
-    // Devolver el nombre del usuario junto con el userId
+    // Devolver el nombre del usuario, userId y id_rol
     res.json({ 
       success: true, 
       message: "Inicio de sesión exitoso", 
       userId: user.id_usuario, 
-      nombre: user.nombre // Añadir el nombre del usuario
+      nombre: user.nombre, // Añadir el nombre del usuario
+      id_rol: user.id_rol  // Añadir el id_rol del usuario
     });
   } catch (error) {
     console.error("Error en el login:", error);
@@ -527,5 +550,170 @@ app.get("/api/searchCategories", async (req, res) => {
   } catch (error) {
     console.error("Error al buscar catálogos:", error);
     res.status(500).json({ error: "Error al buscar catálogos" });
+  }
+});
+
+
+
+app.get("/api/admin/users", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT id_usuario, nombre, correo, id_rol FROM usuario");
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error al obtener usuarios:", error);
+    res.status(500).json({ message: "Error en el servidor" });
+  }
+});
+
+app.delete("/api/admin/users/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query("DELETE FROM usuario WHERE id_usuario = $1", [id]);
+    res.json({ success: true, message: "Usuario eliminado correctamente" });
+  } catch (error) {
+    console.error("Error al eliminar usuario:", error);
+    res.status(500).json({ message: "Error en el servidor" });
+  }
+});
+
+app.get("/api/admin/catalogos", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT c.id_catalogo, c.nombre, COUNT(er.id_caso) AS intentos
+      FROM Catalogos c
+      LEFT JOIN Escenarios e ON c.id_catalogo = e.id_catalogo
+      LEFT JOIN Escenarios_resultados er ON e.id_escenario = er.id_escenario
+      GROUP BY c.id_catalogo
+    `);
+
+    // Convertir el campo "intentos" a número
+    const catalogos = result.rows.map((catalogo) => ({
+      ...catalogo,
+      intentos: parseInt(catalogo.intentos, 10), // Convertir a número
+    }));
+
+    console.log("Resultado de la consulta:", catalogos); // Verifica la respuesta
+    res.json(catalogos); // Envía la respuesta como JSON
+  } catch (error) {
+    console.error("Error al obtener catálogos:", error);
+    res.status(500).json({ message: "Error en el servidor" });
+  }
+});
+
+app.delete("/api/admin/catalogos/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query("DELETE FROM Catalogos WHERE id_catalogo = $1", [id]);
+    res.json({ success: true, message: "Catálogo eliminado correctamente" });
+  } catch (error) {
+    console.error("Error al eliminar catálogo:", error);
+    res.status(500).json({ message: "Error en el servidor" });
+  }
+});
+
+app.post("/api/admin/catalogos", async (req, res) => {
+  const { nombre, imagen } = req.body;
+  try {
+    const result = await pool.query(
+      "INSERT INTO Catalogos (nombre, imagen) VALUES ($1, $2) RETURNING *",
+      [nombre, imagen]
+    );
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error("Error al crear catálogo:", error);
+    res.status(500).json({ message: "Error en el servidor" });
+  }
+});
+
+app.get("/api/admin/catalogos/:id/escenarios", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(`
+      SELECT e.id_escenario, e.titulo, 
+             COUNT(er.id_caso) AS intentos,
+             ROUND(AVG(CASE WHEN er.resultado = true THEN 1 ELSE 0 END) * 100, 2) AS porcentaje_correctos
+      FROM Escenarios e
+      LEFT JOIN Escenarios_resultados er ON e.id_escenario = er.id_escenario
+      WHERE e.id_catalogo = $1
+      GROUP BY e.id_escenario
+    `, [id]);
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error al obtener escenarios:", error);
+    res.status(500).json({ message: "Error en el servidor" });
+  }
+});
+
+app.get("/escenarios/:id_catalogo", async (req, res) => {
+  const { id_catalogo } = req.params;
+  console.log(`Solicitando escenarios para el catálogo: ${id_catalogo}`);
+
+  try {
+    const escenariosQuery = `
+      SELECT e.id_escenario, e.titulo, e.descripcion, e.imagen
+      FROM escenarios e
+      WHERE e.id_catalogo = $1
+    `;
+    const escenariosResult = await pool.query(escenariosQuery, [id_catalogo]);
+    console.log("Resultado de la consulta:", escenariosResult.rows);
+
+    if (escenariosResult.rows.length === 0) {
+      console.error("No se encontraron escenarios para este catálogo");
+      return res.status(404).json({ error: "No se encontraron escenarios para este catálogo" });
+    }
+
+    res.json({ escenarios: escenariosResult.rows });
+  } catch (error) {
+    console.error("Error al obtener los escenarios:", error);
+    res.status(500).json({ error: "Error del servidor" });
+  }
+});
+
+
+
+// Obtener todos los usuarios
+app.get('/api/admin/users', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT id_usuario, nombre, apellido_paterno, apellido_materno, correo, id_rol 
+      FROM usuario
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error al obtener usuarios:', error);
+    res.status(500).json({ message: 'Error en el servidor' });
+  }
+});
+
+
+// Crear nuevo usuario
+app.post('/api/admin/users', async (req, res) => {
+  const { nombre, apellido_paterno, apellido_materno, correo, password, id_rol } = req.body;
+  
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const result = await pool.query(
+      `INSERT INTO usuario 
+      (nombre, apellido_paterno, apellido_materno, correo, contraseña, id_rol) 
+      VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [nombre, apellido_paterno, apellido_materno, correo, hashedPassword, id_rol]
+    );
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error al crear usuario:', error);
+    res.status(500).json({ message: 'Error en el servidor' });
+  }
+});
+
+
+// Eliminar usuario
+app.delete('/api/admin/users/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM usuario WHERE id_usuario = $1', [id]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error al eliminar usuario:', error);
+    res.status(500).json({ message: 'Error en el servidor' });
   }
 });

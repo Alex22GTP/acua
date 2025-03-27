@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { MdPersonAdd, MdDelete, MdEdit, MdAdminPanelSettings, MdPerson, MdGroup, MdSecurity } from 'react-icons/md';
+import { MdPersonAdd, MdDelete, MdPeople, MdAdminPanelSettings, MdPerson, MdGroup } from 'react-icons/md';
 import Navbar from '../components/NavbarAdmin';
 
 // Estilos basados en tu CSS
@@ -23,6 +23,19 @@ const SectionTitle = styled.h2`
   align-items: center;
   gap: 0.5rem;
   font-size: 1.8rem;
+`;
+
+
+const AdminHeader = styled.h2`
+  color: #1d3557;
+  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 2rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 `;
 
 const StatsContainer = styled.div`
@@ -83,6 +96,9 @@ const Td = styled.td`
   border-bottom: 1px solid #eee;
   color: #333;
 `;
+
+
+
 
 const Button = styled.button`
   padding: 0.5rem 1rem;
@@ -389,9 +405,9 @@ const UserManagement = () => {
     <AdminContainer>
             <Navbar />
       
-      <SectionTitle>
-        <MdSecurity /> Panel de Administración
-      </SectionTitle>
+      <AdminHeader>
+        <MdPeople /> Gestión de Usuarios
+      </AdminHeader>
 
       {/* Estadísticas */}
       <StatsContainer>

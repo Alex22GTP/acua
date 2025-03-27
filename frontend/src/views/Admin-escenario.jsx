@@ -230,13 +230,14 @@ const ImageContainer = styled.div`
 `;
 
 const MaxOptionsMessage = styled.div`
-  background: #f8f9fa;
+  background: #fff8e1;
   padding: 1rem;
   border-radius: 8px;
   margin-top: 1.5rem;
   text-align: center;
-  color: #457b9d;
-  border-left: 4px solid #e63946;
+  color: #ff8f00;
+  border-left: 4px solid #ffa000;
+  font-size: 0.95rem;
 `;
 
 const ModalOverlay = styled.div`
@@ -274,6 +275,18 @@ const ModalBox = styled.div`
   .active & {
     transform: translateY(0);
   }
+`;
+
+const AdminHeader = styled.h2`
+  color: #1d3557;
+  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 2rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 `;
 
 const ModalTitle = styled.h3`
@@ -581,8 +594,8 @@ const ScenarioManagement = () => {
   const handleOptionSubmit = async (e) => {
     e.preventDefault();
     
-    // Validación de máximo de opciones
-    if (options.length >= 4) {
+    // Solo validar límite para nuevas opciones, no para edición
+    if (!selectedOption && options.length >= 4) {
       showModalMessage(
         'Límite alcanzado',
         'No se pueden agregar más de 4 opciones por escenario'
@@ -678,8 +691,12 @@ const ScenarioManagement = () => {
       <Navbar />
       <AdminContainer>
         <Section>
+          <AdminHeader>
+          <MdImage /> Gestión de Escenarios
+
+          </AdminHeader>
           <SectionHeader>
-            <MdImage /> Gestión de Escenarios
+            <MdImage /> Escenarios Disponibles
           </SectionHeader>
 
           {/* Lista de escenarios */}
@@ -808,102 +825,105 @@ const ScenarioManagement = () => {
 
         {/* Gestión de opciones */}
         {selectedScenario && (
-          <Section>
-            <SectionHeader>
-              <MdArrowBack 
-                onClick={() => setSelectedScenario(null)} 
-                style={{ cursor: "pointer" }} 
-              />{" "}
-              Opciones del Escenario ({options.length}/4)
-            </SectionHeader>
+  <Section>
+    <SectionHeader>
+      <MdArrowBack 
+        onClick={() => {
+          setSelectedScenario(null);
+          setSelectedOption(null);
+        }} 
+        style={{ cursor: "pointer" }} 
+      />{" "}
+      Opciones del Escenario ({options.length}/4)
+    </SectionHeader>
 
-            {/* Lista de opciones */}
-            <CardGrid>
-              {options.map(option => (
-                <OptionCard key={option.id_opcion}>
-                  <CardTitle>{option.descripcion}</CardTitle>
-                  <OptionContent>
-                    <strong>Solución:</strong> {option.solucion ? 'Sí' : 'No'}
-                  </OptionContent>
-                  <OptionContent>
-                    <strong>Retroalimentación:</strong> {option.retroalimentacion}
-                  </OptionContent>
-                  <CardActions>
-                    <ActionButton 
-                      bgColor="#4CAF50" 
-                      hoverColor="#45a049"
-                      onClick={() => editOption(option)}
-                    >
-                      <MdEdit /> Editar
-                    </ActionButton>
-                    <ActionButton 
-                      bgColor="#f44336" 
-                      hoverColor="#d32f2f"
-                      onClick={() => confirmDelete(option.id_opcion, 'option')}
-                    >
-                      <MdDelete /> Eliminar
-                    </ActionButton>
-                  </CardActions>
-                </OptionCard>
-              ))}
-            </CardGrid>
+    {/* Lista de opciones */}
+    <CardGrid>
+      {options.map(option => (
+        <OptionCard key={option.id_opcion}>
+          <CardTitle>{option.descripcion}</CardTitle>
+          <OptionContent>
+            <strong>Solución:</strong> {option.solucion ? 'Sí' : 'No'}
+          </OptionContent>
+          <OptionContent>
+            <strong>Retroalimentación:</strong> {option.retroalimentacion}
+          </OptionContent>
+          <CardActions>
+            <ActionButton 
+              bgColor="#4CAF50" 
+              hoverColor="#45a049"
+              onClick={() => editOption(option)}
+            >
+              <MdEdit /> Editar
+            </ActionButton>
+            <ActionButton 
+              bgColor="#f44336" 
+              hoverColor="#d32f2f"
+              onClick={() => confirmDelete(option.id_opcion, 'option')}
+            >
+              <MdDelete /> Eliminar
+            </ActionButton>
+          </CardActions>
+        </OptionCard>
+      ))}
+    </CardGrid>
 
-            {/* Formulario de opción - Solo se muestra si hay menos de 4 opciones */}
-            {options.length < 4 ? (
-              <FormContainer>
-                <SectionHeader>
-                  <MdAdd /> {selectedOption ? 'Editar' : 'Agregar'} Opción
-                </SectionHeader>
-                <form onSubmit={handleOptionSubmit}>
-                  <FormInput
-                    type="text"
-                    name="descripcion"
-                    placeholder="Descripción"
-                    value={optionForm.descripcion}
-                    onChange={handleOptionChange}
-                    required
-                  />
-                  <div style={{ marginBottom: '1rem' }}>
-                    <label>
-                      <input
-                        type="checkbox"
-                        name="solucion"
-                        checked={optionForm.solucion}
-                        onChange={handleOptionChange}
-                        style={{ marginRight: '0.5rem' }}
-                      />
-                      ¿Es solución correcta?
-                    </label>
-                  </div>
-                  <FormTextarea
-                    name="retroalimentacion"
-                    placeholder="Retroalimentación"
-                    value={optionForm.retroalimentacion}
-                    onChange={handleOptionChange}
-                    required
-                  />
-                  <FormButton type="submit" disabled={loading}>
-                    {selectedOption ? <MdCheck /> : <MdAdd />}
-                    {loading ? 'Procesando...' : selectedOption ? 'Actualizar' : 'Crear'}
-                  </FormButton>
-                  {selectedOption && (
-                    <ActionButton 
-                      type="button"
-                      onClick={resetOptionForm}
-                      style={{ marginLeft: '0.5rem' }}
-                    >
-                      <MdClose /> Cancelar
-                    </ActionButton>
-                  )}
-                </form>
-              </FormContainer>
-            ) : (
-              <MaxOptionsMessage>
-                Este escenario ya tiene el máximo de 4 opciones permitidas.
-              </MaxOptionsMessage>
-            )}
-          </Section>
-        )}
+    {/* Formulario de opción - Se muestra para editar o si hay menos de 4 opciones */}
+    {(options.length < 4 || selectedOption) ? (
+      <FormContainer>
+        <SectionHeader>
+          <MdAdd /> {selectedOption ? 'Editar' : 'Agregar'} Opción
+        </SectionHeader>
+        <form onSubmit={handleOptionSubmit}>
+          <FormInput
+            type="text"
+            name="descripcion"
+            placeholder="Descripción"
+            value={optionForm.descripcion}
+            onChange={handleOptionChange}
+            required
+          />
+          <div style={{ marginBottom: '1rem' }}>
+            <label>
+              <input
+                type="checkbox"
+                name="solucion"
+                checked={optionForm.solucion}
+                onChange={handleOptionChange}
+                style={{ marginRight: '0.5rem' }}
+              />
+              ¿Es solución correcta?
+            </label>
+          </div>
+          <FormTextarea
+            name="retroalimentacion"
+            placeholder="Retroalimentación"
+            value={optionForm.retroalimentacion}
+            onChange={handleOptionChange}
+            required
+          />
+          <FormButton type="submit" disabled={loading}>
+            {selectedOption ? <MdCheck /> : <MdAdd />}
+            {loading ? 'Procesando...' : selectedOption ? 'Actualizar' : 'Crear'}
+          </FormButton>
+          {selectedOption && (
+            <ActionButton 
+              type="button"
+              onClick={resetOptionForm}
+              style={{ marginLeft: '0.5rem' }}
+            >
+              <MdClose /> Cancelar
+            </ActionButton>
+          )}
+        </form>
+      </FormContainer>
+    ) : (
+      <MaxOptionsMessage>
+        Este escenario ya tiene el máximo de 4 opciones permitidas.
+      </MaxOptionsMessage>
+    )}
+  </Section>
+)}
       </AdminContainer>
 
       {/* Modal de confirmación */}

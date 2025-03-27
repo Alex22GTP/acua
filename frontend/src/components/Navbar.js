@@ -1,15 +1,57 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import { MdAccountCircle, MdSettings, MdLogout, MdHelp, MdManageAccounts, MdSecurity, MdMenu, MdClose,  MdBarChart } from "react-icons/md";
+import { MdAccountCircle, MdSettings, MdLogout,MdImage, MdHelp, MdManageAccounts, MdSecurity, MdMenu, MdClose, MdBarChart, MdHome } from "react-icons/md";
 import { Link as ScrollLink } from "react-scroll";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import logo from "../img/logoss.png";
 import { createGlobalStyle } from 'styled-components';
 
-// Importar la fuente de Google Fonts
 const GlobalStyle = createGlobalStyle`
   @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+`;
+
+const SidebarHeader = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem 0;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 1rem;
+`;
+
+const MobileMenuItem = styled.div`
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  transition: all 0.2s ease;
+    padding: 0.75rem 1rem; /* Más compacto */
+  font-size: 0.9rem; /* Texto un poco más pequeño */
+
+  &:hover {
+    background-color: #f0f0f0;
+  }
+
+  svg {
+    font-size: 1.25rem;
+    color: #457b9d;
+  }
+`;
+
+const MobileSubmenuHeader = styled.div`
+  color: #457b9d;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 1rem;
+  border-top: 1px solid #eee;
+  font-size: 0.8rem; /* Más pequeño */
+  padding: 0.5rem 1rem 0.2rem; /* Menos espacio */
 `;
 
 const NavbarContainer = styled.nav`
@@ -159,7 +201,6 @@ const Sidebar = styled.div`
   position: fixed;
   top: 0;
   left: 0;
-  width: 250px;
   height: 100%;
   background: #ffffff;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
@@ -167,8 +208,10 @@ const Sidebar = styled.div`
   transform: ${({ isOpen }) => (isOpen ? "translateX(0)" : "translateX(-100%)")};
   display: flex;
   flex-direction: column;
-  padding: 1rem;
   z-index: 1000;
+    width: 240px; /* Reduje un poco el ancho */
+  padding: 0.5rem; /* Menos padding */
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   @media (min-width: 769px) {
     display: none;
@@ -240,25 +283,26 @@ function Navbar() {
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 50) {
-        setScrolled(true);
-      } else {
-        setScrolled(false);
-      }
+      setScrolled(window.scrollY > 10); // Más sensible al scroll
     };
-
-    window.addEventListener("scroll", handleScroll);
+  
+    // Detección inicial
+    handleScroll();
+  
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   useEffect(() => {
     const userId = localStorage.getItem("userId");
-    const storedUserName = localStorage.getItem("userName"); // Obtener el nombre del usuario
+    const storedUserName = localStorage.getItem("userName");
     if (userId) {
       setIsLoggedIn(true);
-      setUserName(storedUserName || "Usuario"); // Usar el nombre del usuario o "Usuario" por defecto
+      setUserName(storedUserName || "Usuario");
     }
   }, []);
+
+  
 
   const handleLogout = () => {
     localStorage.removeItem("userId");
@@ -266,6 +310,7 @@ function Navbar() {
     setIsLoggedIn(false);
     setUserName("");
     navigate("/login");
+    setSidebarOpen(false);
   };
 
   return (
@@ -278,6 +323,7 @@ function Navbar() {
           </ScrollLink>
           <LogoText scrolled={scrolled}>SECRUFY</LogoText>
         </LogoContainer>
+
 
         <IconsContainer>
           <MenuItem
@@ -381,46 +427,114 @@ function Navbar() {
           <MdMenu />
         </MobileMenuButton>
 
-        <Sidebar isOpen={isSidebarOpen}>
-          <CloseButton onClick={() => setSidebarOpen(false)}>
-            <MdClose />
-          </CloseButton>
-          <MenuItem>
-            <ScrollLink to="quienes-somos" smooth={true} duration={500} offset={-80} onClick={() => setSidebarOpen(false)}>
-              ¿Quiénes somos?
-            </ScrollLink>
-          </MenuItem>
-          <MenuItem>
-            <ScrollLink to="servicios" smooth={true} duration={500} offset={-80} onClick={() => setSidebarOpen(false)}>
-              Nuestros servicios
-            </ScrollLink>
-          </MenuItem>
-          <MenuItem>
-            <ScrollLink to="catalogos" smooth={true} duration={500} offset={-80} onClick={() => setSidebarOpen(false)}>
-              Catálogos
-            </ScrollLink>
-          </MenuItem>
+        <>
+  {/* Overlay para cerrar el menú al hacer clic fuera */}
+  {isSidebarOpen && (
+    <div 
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        zIndex: 999,
+        cursor: 'pointer'
+      }} 
+      onClick={() => setSidebarOpen(false)}
+    />
+  )}
 
-          {!isLoggedIn && (
-            <MenuItem>
-              <RouterLink to="/login" style={{ textDecoration: "none", color: "inherit" }} onClick={() => setSidebarOpen(false)}>
-                Iniciar sesión
-              </RouterLink>
-            </MenuItem>
-          )}
+  {/* Menú lateral optimizado */}
+  <Sidebar isOpen={isSidebarOpen} style={{ overflowY: 'auto' }}>
+    <SidebarHeader style={{ padding: '0.5rem 0' }}>
+      <CloseButton 
+        onClick={() => setSidebarOpen(false)} 
+        style={{ 
+          position: 'absolute', 
+          right: '0.5rem', 
+          top: '0.5rem',
+          fontSize: '1.5rem'
+        }}
+      >
+        <MdClose />
+      </CloseButton>
+      <Logo src={logo} alt="Logo" style={{ height: '50px', margin: '0.5rem 0' }} />
+      <LogoText style={{ color: '#1d3557', marginBottom: '1rem', fontSize: '1.2rem' }}>SECRUFY</LogoText>
+    </SidebarHeader>
 
-          {isLoggedIn && (
-            <>
-              <DropdownItem><MdManageAccounts /> Mi Perfil</DropdownItem>
-              <DropdownItem onClick={handleLogout}><MdLogout /> Cerrar Sesión</DropdownItem>
-              <DropdownItem><MdSecurity /> Seguridad</DropdownItem>
-              <DropdownItem><MdHelp /> Soporte</DropdownItem>
-            </>
-          )}
-        </Sidebar>
+    {/* Menú compacto */}
+    <div style={{ padding: '0 0.5rem' }}>
+      <MobileMenuItem onClick={() => { 
+        setSidebarOpen(false);
+        document.getElementById('inicio')?.scrollIntoView({ behavior: 'smooth' });
+      }}>
+        <MdHome /> Inicio
+      </MobileMenuItem>
+
+      <MobileMenuItem onClick={() => { 
+        setSidebarOpen(false);
+        document.getElementById('catalogos')?.scrollIntoView({ behavior: 'smooth' });
+      }}>
+        <MdImage /> Catálogos
+      </MobileMenuItem>
+
+      <MobileMenuItem onClick={() => { 
+        setSidebarOpen(false);
+        document.getElementById('quienes-somos')?.scrollIntoView({ behavior: 'smooth' });
+      }}>
+        <MdHelp /> ¿Quiénes somos?
+      </MobileMenuItem>
+
+      <MobileMenuItem onClick={() => { 
+        setSidebarOpen(false);
+        document.getElementById('servicios')?.scrollIntoView({ behavior: 'smooth' });
+      }}>
+        <MdSettings /> Servicios
+      </MobileMenuItem>
+
+      {isLoggedIn && (
+        <>
+          <MobileSubmenuHeader style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>MI CUENTA</MobileSubmenuHeader>
+          
+          <MobileMenuItem style={{ padding: '0.75rem 1rem' }} onClick={() => { navigate("/perfil"); setSidebarOpen(false); }}>
+            <MdManageAccounts /> Perfil
+          </MobileMenuItem>
+          
+          <MobileMenuItem style={{ padding: '0.75rem 1rem' }} onClick={() => { navigate("/estadistica"); setSidebarOpen(false); }}>
+            <MdBarChart /> Estadísticas
+          </MobileMenuItem>
+
+          <MobileSubmenuHeader style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>CONFIGURACIÓN</MobileSubmenuHeader>
+          
+          <MobileMenuItem style={{ padding: '0.75rem 1rem' }} onClick={() => { navigate("/seguridad"); setSidebarOpen(false); }}>
+            <MdSecurity /> Seguridad
+          </MobileMenuItem>
+          
+          <MobileMenuItem style={{ padding: '0.75rem 1rem' }} onClick={() => { navigate("/soporte"); setSidebarOpen(false); }}>
+            <MdHelp /> Soporte
+          </MobileMenuItem>
+          
+          <MobileMenuItem style={{ padding: '0.75rem 1rem' }} onClick={handleLogout}>
+            <MdLogout /> Cerrar Sesión
+          </MobileMenuItem>
+        </>
+      )}
+
+      {!isLoggedIn && (
+        <MobileMenuItem style={{ padding: '0.75rem 1rem' }} onClick={() => { navigate("/login"); setSidebarOpen(false); }}>
+          <MdAccountCircle /> Iniciar Sesión
+        </MobileMenuItem>
+      )}
+    </div>
+  </Sidebar>
+</>
       </NavbarContainer>
     </>
   );
 }
+
+
+
 
 export default Navbar;

@@ -633,17 +633,34 @@ app.delete("/api/admin/catalogos/:id", async (req, res) => {
   }
 });
 
-app.post("/api/admin/catalogos", async (req, res) => {
-  const { nombre, imagen } = req.body;
+app.post('/api/admin/catalogos', upload.single('imagen'), async (req, res) => {
   try {
+    const { nombre } = req.body;
+    const imagenBuffer = req.file?.buffer;
+
+    // Validación de campos requeridos
+    if (!nombre || !nombre.trim()) {
+      return res.status(400).json({ error: 'El nombre del catálogo es requerido' });
+    }
+
+    if (!imagenBuffer) {
+      return res.status(400).json({ error: 'La imagen es requerida' });
+    }
+
     const result = await pool.query(
-      "INSERT INTO Catalogos (nombre, imagen) VALUES ($1, $2) RETURNING *",
-      [nombre, imagen]
+      'INSERT INTO catalogos (nombre, imagen) VALUES ($1, $2) RETURNING *',
+      [nombre.trim(), imagenBuffer]
     );
+
     res.json(result.rows[0]);
   } catch (error) {
-    console.error("Error al crear catálogo:", error);
-    res.status(500).json({ message: "Error en el servidor" });
+    console.error('Error al crear catálogo:', error);
+    
+    if (error.code === '23502') { // Error de violación de NOT NULL
+      return res.status(400).json({ error: 'Todos los campos son requeridos' });
+    }
+    
+    res.status(500).json({ error: 'Error al crear catálogo' });
   }
 });
 

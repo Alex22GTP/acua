@@ -336,39 +336,48 @@ function AdminDashboard() {
   };
 
   // Crear nuevo catálogo
-  const handleCreateCatalog = async () => {
-    if (!newCatalogName || !newCatalogImage) {
-      showModalMessage("Advertencia", "Por favor, completa todos los campos");
-      return;
-    }
+  // Actualiza la función handleCreateCatalog
+const handleCreateCatalog = async () => {
+  if (!newCatalogName.trim()) {
+    showModalMessage("Advertencia", "Por favor ingresa un nombre para el catálogo");
+    return;
+  }
 
-    setLoading(true);
+  if (!newCatalogImage) {
+    showModalMessage("Advertencia", "Por favor selecciona una imagen para el catálogo");
+    return;
+  }
+
+  setLoading(true);
+  
+  try {
     const formData = new FormData();
-    formData.append("nombre", newCatalogName);
-    formData.append("imagen", newCatalogImage);
+    formData.append('nombre', newCatalogName.trim());
+    formData.append('imagen', newCatalogImage);
 
-    try {
-      const response = await fetch("http://localhost:5000/api/admin/catalogos", {
-        method: "POST",
-        body: formData,
-      });
+    const response = await fetch("http://localhost:5000/api/admin/catalogos", {
+      method: "POST",
+      body: formData
+      // No establezcas Content-Type manualmente, fetch lo hará automáticamente
+    });
 
+    if (response.ok) {
       const data = await response.json();
-      if (response.ok) {
-        setCatalogos([...catalogos, data]);
-        setNewCatalogName("");
-        setNewCatalogImage(null);
-        showModalMessage("Éxito", "Catálogo creado correctamente", true);
-      } else {
-        showModalMessage("Error", data.message || "Error al crear catálogo");
-      }
-    } catch (error) {
-      console.error("Error al crear catálogo:", error);
-      showModalMessage("Error", "Error al conectar con el servidor");
-    } finally {
-      setLoading(false);
+      setCatalogos([...catalogos, data]);
+      setNewCatalogName("");
+      setNewCatalogImage(null);
+      showModalMessage("Éxito", "Catálogo creado correctamente", true);
+    } else {
+      const errorData = await response.json();
+      showModalMessage("Error", errorData.message || "Error al crear catálogo");
     }
-  };
+  } catch (error) {
+    console.error("Error al crear catálogo:", error);
+    showModalMessage("Error", "Error al conectar con el servidor");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <>
@@ -456,22 +465,58 @@ function AdminDashboard() {
           <SectionHeader>
             <MdAdd /> Crear Nuevo Catálogo
           </SectionHeader>
-          <FormContainer>
-            <FormInput
-              type="text"
-              placeholder="Nombre del catálogo"
-              value={newCatalogName}
-              onChange={(e) => setNewCatalogName(e.target.value)}
-            />
-            <FormInput
-              type="file"
-              accept="image/*"
-              onChange={(e) => setNewCatalogImage(e.target.files[0])}
-            />
-            <FormButton onClick={handleCreateCatalog} disabled={loading}>
-              <MdAdd /> {loading ? "Creando..." : "Crear Catálogo"}
-            </FormButton>
-          </FormContainer>
+
+<FormContainer>
+  <FormInput
+    type="text"
+    placeholder="Nombre del catálogo"
+    value={newCatalogName}
+    onChange={(e) => setNewCatalogName(e.target.value)}
+    required
+  />
+  <FormInput
+    type="file"
+    accept="image/*"
+    onChange={(e) => {
+      if (e.target.files && e.target.files[0]) {
+        setNewCatalogImage(e.target.files[0]);
+      }
+    }}
+    required
+  />
+  
+  {/* Vista previa de la imagen */}
+  {newCatalogImage && (
+    <div style={{ margin: '1rem 0', textAlign: 'center' }}>
+      <img 
+        src={URL.createObjectURL(newCatalogImage)} 
+        alt="Vista previa" 
+        style={{ 
+          maxWidth: '100%', 
+          maxHeight: '200px', 
+          borderRadius: '4px',
+          border: '1px solid #ddd'
+        }} 
+      />
+      <ActionButton
+        type="button"
+        onClick={() => setNewCatalogImage(null)}
+        bgColor="#f44336"
+        hoverColor="#d32f2f"
+        style={{ marginTop: '0.5rem' }}
+      >
+        <MdDelete /> Eliminar imagen
+      </ActionButton>
+    </div>
+  )}
+
+  <FormButton 
+    onClick={handleCreateCatalog} 
+    disabled={loading || !newCatalogName.trim() || !newCatalogImage}
+  >
+    <MdAdd /> {loading ? "Creando..." : "Crear Catálogo"}
+  </FormButton>
+</FormContainer>
         </Section>
       </AdminContainer>
 

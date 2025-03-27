@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import { MdAccountCircle, MdSettings, MdLogout, MdHelp, MdManageAccounts, MdSecurity, MdMenu, MdClose, MdBarChart, MdAdminPanelSettings } from "react-icons/md";
-import { Link as ScrollLink } from "react-scroll";
+import { MdAccountCircle, MdLogout, MdManageAccounts, MdMenu, MdClose, MdBarChart, MdHome, MdListAlt, MdPeople, MdSettings } from "react-icons/md";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import logo from "../img/logoss.png";
 import { createGlobalStyle } from 'styled-components';
 
+// Cargar la fuente de Google Fonts
 const GlobalStyle = createGlobalStyle`
   @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
-`;
 
+  body {
+    font-family: 'Poppins', sans-serif;
+  }
+`;
 
 const NavbarContainer = styled.nav`
   background-color: ${({ scrolled }) => (scrolled ? "#1d3557" : "#ffffff")};
@@ -66,76 +69,6 @@ const IconsContainer = styled.div`
 
   @media (max-width: 768px) {
     display: none;
-  }
-`;
-
-const IconWrapper = styled.div`
-  position: relative;
-`;
-
-const IconButton = styled.button`
-  background: none;
-  border: none;
-  font-size: 2rem;
-  cursor: pointer;
-  transition: transform 0.3s ease, color 0.3s ease;
-  color: ${({ scrolled }) => (scrolled ? "#a8dadc" : "#1d3557")};
-  display: flex; /* Añadir display flex */
-  align-items: center; /* Alinear verticalmente */
-  gap: 0.5rem; /* Espacio entre el ícono y el nombre */
-
-  &:hover {
-    transform: scale(1.3);
-    color: ${({ scrolled }) => (scrolled ? "#ffffff" : "#1d3557")};
-  }
-
-  @media (max-width: 768px) {
-    font-size: 1.7rem;
-  }
-`;
-
-const DropdownMenu = styled.div`
-  position: absolute;
-  top: 100%;
-  right: 0;
-  background: ${({ scrolled }) => (scrolled ? "#1d3557" : "#ffffff")};
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  border-radius: 8px;
-  overflow: hidden;
-  display: ${({ isOpen }) => (isOpen ? "block" : "none")};
-  min-width: 180px;
-  z-index: 10;
-  animation: fadeIn 0.3s ease-in-out;
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-`;
-
-const DropdownItem = styled.button`
-  width: 100%;
-  background: none;
-  border: none;
-  padding: 12px 16px;
-  text-align: left;
-  color: ${({ scrolled }) => (scrolled ? "#ffffff" : "#333")};
-  font-size: 1rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  transition: background 0.3s ease, color 0.3s ease;
-
-  &:hover {
-    background: ${({ scrolled }) => (scrolled ? "#457b9d" : "#f0f0f0")};
-    color: ${({ scrolled }) => (scrolled ? "#ffffff" : "#1d3557")};
   }
 `;
 
@@ -216,29 +149,11 @@ const MenuItem = styled(motion.div)`
   }
 `;
 
-const CatalogosMenuItem = styled(MenuItem)`
-  margin-left: 20px;
-`;
-
-const UserName = styled.span`
-  font-size: 1rem;
-  color: ${({ scrolled }) => (scrolled ? "#ffffff" : "#1d3557")};
-  font-family: 'Poppins', sans-serif;
-`;
-
-
 function Navbar() {
-  const [activeMenu, setActiveMenu] = useState(null);
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userName, setUserName] = useState("");
-  const [userRole, setUserRole] = useState(null); // Nuevo estado para el rol del usuario
   const navigate = useNavigate();
-
-  const toggleMenu = (menu) => {
-    setActiveMenu(activeMenu === menu ? null : menu);
-  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -255,22 +170,14 @@ function Navbar() {
 
   useEffect(() => {
     const userId = localStorage.getItem("userId");
-    const storedUserName = localStorage.getItem("userName");
-    const storedUserRole = localStorage.getItem("userRole"); // Obtener el rol del usuario
     if (userId) {
       setIsLoggedIn(true);
-      setUserName(storedUserName || "Usuario");
-      setUserRole(storedUserRole); // Establecer el rol del usuario
     }
   }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("userId");
-    localStorage.removeItem("userName");
-    localStorage.removeItem("userRole"); // Eliminar el rol al cerrar sesión
     setIsLoggedIn(false);
-    setUserName("");
-    setUserRole(null);
     navigate("/login");
   };
 
@@ -279,57 +186,13 @@ function Navbar() {
       <GlobalStyle />
       <NavbarContainer scrolled={scrolled}>
         <LogoContainer>
-          <ScrollLink to="inicio" smooth={true} duration={500} offset={-80}>
+          <RouterLink to="/">
             <Logo src={logo} alt="Logo" />
-          </ScrollLink>
+          </RouterLink>
           <LogoText scrolled={scrolled}>SECRUFY</LogoText>
         </LogoContainer>
 
         <IconsContainer>
-          <MenuItem
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            scrolled={scrolled}
-          >
-            <ScrollLink to="inicio" smooth={true} duration={500} offset={-80}>
-              Inicio
-            </ScrollLink>
-          </MenuItem>
-
-          <CatalogosMenuItem
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            scrolled={scrolled}
-          >
-            <ScrollLink to="catalogos" smooth={true} duration={500} offset={-80}>
-              Catálogos
-            </ScrollLink>
-          </CatalogosMenuItem>
-
-          <MenuItem
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            scrolled={scrolled}
-          >
-            <ScrollLink to="quienes-somos" smooth={true} duration={500} offset={-80}>
-              ¿Quiénes somos?
-            </ScrollLink>
-          </MenuItem>
-
-          <MenuItem
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            scrolled={scrolled}
-          >
-            <ScrollLink to="servicios" smooth={true} duration={500} offset={-80}>
-              Nuestros servicios
-            </ScrollLink>
-          </MenuItem>
-
           {!isLoggedIn && (
             <MenuItem
               initial={{ opacity: 0, y: -10 }}
@@ -338,58 +201,55 @@ function Navbar() {
               scrolled={scrolled}
             >
               <RouterLink to="/login" style={{ textDecoration: "none", color: "inherit" }}>
-                Iniciar sesión
+                <MdAccountCircle /> Iniciar sesión
               </RouterLink>
             </MenuItem>
           )}
 
           {isLoggedIn && (
             <>
-              <IconWrapper>
-                <IconButton scrolled={scrolled} onClick={() => toggleMenu("user")}>
-                  <MdAccountCircle />
-                  {userName && <UserName scrolled={scrolled}>{userName}</UserName>}
-                </IconButton>
-                <DropdownMenu isOpen={activeMenu === "user"} scrolled={scrolled}>
-                  <DropdownItem 
-                    scrolled={scrolled} 
-                    onClick={() => navigate("/perfil")}
-                  >
-                    <MdManageAccounts /> Mi Perfil
-                  </DropdownItem>
+              <MenuItem
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                scrolled={scrolled}
+              >
+                <RouterLink to="/admin" style={{ textDecoration: "none", color: "inherit" }}>
+                  <MdListAlt /> Gestión de Catálogos
+                </RouterLink>
+              </MenuItem>
 
-                  <DropdownItem 
-                    scrolled={scrolled}
-                    onClick={() => navigate("/estadistica")}
-                  >
-                    <MdBarChart /> Ver Estadísticas
-                  </DropdownItem>
+              <MenuItem
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                scrolled={scrolled}
+              >
+                <RouterLink to="/admin-user" style={{ textDecoration: "none", color: "inherit" }}>
+                  <MdPeople /> Gestión de Usuarios
+                </RouterLink>
+              </MenuItem>
 
-                  {/* Opción de Administración (solo para administradores) */}
-                  {userRole === "1" && ( // Si el rol es 1 (Administrador)
-                    <DropdownItem
-                      scrolled={scrolled}
-                      onClick={() => navigate("/admin")}
-                    >
-                      <MdAdminPanelSettings /> Panel de Administración
-                    </DropdownItem>
-                  )}
+              <MenuItem
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+                scrolled={scrolled}
+              >
+                <RouterLink to="/admin-esc" style={{ textDecoration: "none", color: "inherit" }}>
+                  <MdSettings /> Gestión de Escenarios
+                </RouterLink>
+              </MenuItem>
 
-                  <DropdownItem scrolled={scrolled} onClick={handleLogout}>
-                    <MdLogout /> Cerrar Sesión
-                  </DropdownItem>
-                </DropdownMenu>
-              </IconWrapper>
-
-              <IconWrapper>
-                <IconButton scrolled={scrolled} onClick={() => toggleMenu("settings")}>
-                  <MdSettings />
-                </IconButton>
-                <DropdownMenu isOpen={activeMenu === "settings"} scrolled={scrolled}>
-                  <DropdownItem scrolled={scrolled}><MdSecurity /> Seguridad</DropdownItem>
-                  <DropdownItem scrolled={scrolled}><MdHelp /> Soporte</DropdownItem>
-                </DropdownMenu>
-              </IconWrapper>
+              <MenuItem
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+                scrolled={scrolled}
+                onClick={handleLogout}
+              >
+                <MdLogout /> Cerrar Sesión
+              </MenuItem>
             </>
           )}
         </IconsContainer>
@@ -402,41 +262,32 @@ function Navbar() {
           <CloseButton onClick={() => setSidebarOpen(false)}>
             <MdClose />
           </CloseButton>
-          <MenuItem>
-            <ScrollLink to="quienes-somos" smooth={true} duration={500} offset={-80} onClick={() => setSidebarOpen(false)}>
-              ¿Quiénes somos?
-            </ScrollLink>
-          </MenuItem>
-          <MenuItem>
-            <ScrollLink to="servicios" smooth={true} duration={500} offset={-80} onClick={() => setSidebarOpen(false)}>
-              Nuestros servicios
-            </ScrollLink>
-          </MenuItem>
-          <MenuItem>
-            <ScrollLink to="catalogos" smooth={true} duration={500} offset={-80} onClick={() => setSidebarOpen(false)}>
-              Catálogos
-            </ScrollLink>
-          </MenuItem>
 
           {!isLoggedIn && (
             <MenuItem>
               <RouterLink to="/login" style={{ textDecoration: "none", color: "inherit" }} onClick={() => setSidebarOpen(false)}>
-                Iniciar sesión
+                <MdAccountCircle /> Iniciar sesión
               </RouterLink>
             </MenuItem>
           )}
 
           {isLoggedIn && (
             <>
-              <DropdownItem><MdManageAccounts /> Mi Perfil</DropdownItem>
-              <DropdownItem onClick={handleLogout}><MdLogout /> Cerrar Sesión</DropdownItem>
-              <DropdownItem><MdSecurity /> Seguridad</DropdownItem>
-              <DropdownItem><MdHelp /> Soporte</DropdownItem>
-              {userRole === "1" && (
-                <DropdownItem onClick={() => navigate("/admin")}>
-                  <MdAdminPanelSettings /> Panel de Administración
-                </DropdownItem>
-              )}
+              <MenuItem onClick={() => {navigate("/Admin"); setSidebarOpen(false);}}>
+                <MdListAlt /> Gestión de Catálogos
+              </MenuItem>
+              
+              <MenuItem onClick={() => {navigate("/Admin-user"); setSidebarOpen(false);}}>
+                <MdPeople /> Gestión de Usuarios
+              </MenuItem>
+              
+              <MenuItem onClick={() => {navigate("/Admin-esc"); setSidebarOpen(false);}}>
+                <MdSettings /> Gestión de Escenarios
+              </MenuItem>
+              
+              <MenuItem onClick={() => {handleLogout(); setSidebarOpen(false);}}>
+                <MdLogout /> Cerrar Sesión
+              </MenuItem>
             </>
           )}
         </Sidebar>

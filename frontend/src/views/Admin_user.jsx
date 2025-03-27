@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { MdPersonAdd, MdDelete, MdEdit, MdAdminPanelSettings, MdPerson, MdGroup, MdSecurity } from 'react-icons/md';
+import Navbar from '../components/NavbarAdmin';
 
 // Estilos basados en tu CSS
 const AdminContainer = styled.div`
   padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  margin-top: 100px;
   font-family: 'Poppins', sans-serif;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  min-height: calc(100vh - 180px);
 `;
 
 const SectionTitle = styled.h2`
@@ -381,7 +385,10 @@ const UserManagement = () => {
   };
 
   return (
+    
     <AdminContainer>
+            <Navbar />
+      
       <SectionTitle>
         <MdSecurity /> Panel de Administración
       </SectionTitle>

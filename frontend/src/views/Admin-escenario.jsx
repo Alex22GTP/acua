@@ -48,11 +48,6 @@ const Card = styled.div`
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
-
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-  }
 `;
 
 const CardImageContainer = styled.div`
@@ -102,12 +97,35 @@ const CardContent = styled.div`
   color: #333;
   margin-bottom: 1rem;
   flex-grow: 1;
+  font-size: 0.95rem;
+  line-height: 1.5;
+`;
+
+const OptionCard = styled.div`
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  margin-bottom: 1rem;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  }
+`;
+
+const OptionContent = styled.div`
+  color: #333;
+  margin-bottom: 0.8rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
 `;
 
 const CardActions = styled.div`
   display: flex;
   gap: 0.5rem;
-  margin-top: auto;
+  margin-top: 1rem;
 `;
 
 const ActionButton = styled.button`
@@ -316,6 +334,7 @@ const ModalButton = styled.button`
 const ScenarioManagement = () => {
   const [scenarios, setScenarios] = useState([]);
   const [options, setOptions] = useState([]);
+  const [catalogos, setCatalogos] = useState([]);
   const [selectedScenario, setSelectedScenario] = useState(null);
   const [selectedOption, setSelectedOption] = useState(null);
   const [formData, setFormData] = useState({
@@ -336,6 +355,22 @@ const ScenarioManagement = () => {
   const [itemToDelete, setItemToDelete] = useState(null);
   const [deleteType, setDeleteType] = useState('');
 
+  // Obtener catálogos
+  useEffect(() => {
+    const fetchCatalogos = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/admin/catalogos');
+        if (response.ok) {
+          const data = await response.json();
+          setCatalogos(data);
+        }
+      } catch (error) {
+        console.error('Error al obtener catálogos:', error);
+      }
+    };
+    fetchCatalogos();
+  }, []);
+
   // Obtener escenarios
   const fetchScenarios = async () => {
     try {
@@ -347,12 +382,15 @@ const ScenarioManagement = () => {
       }
       
       const data = await response.json();
-      // Asegurarse de que cada escenario tenga la propiedad 'imagen'
-      const scenariosWithImageFlag = data.map(scenario => ({
-        ...scenario,
-        imagen: scenario.imagen !== null // Convertir a booleano para saber si tiene imagen
-      }));
-      setScenarios(scenariosWithImageFlag);
+      const scenariosWithCatalogName = data.map(scenario => {
+        const catalogo = catalogos.find(c => c.id_catalogo == scenario.id_catalogo);
+        return {
+          ...scenario,
+          nombre_catalogo: catalogo?.nombre || 'Sin categoría',
+          imagen: scenario.imagen !== null
+        };
+      });
+      setScenarios(scenariosWithCatalogName);
     } catch (error) {
       console.error('Error al obtener escenarios:', error);
       showModalMessage('Error', 'No se pudieron cargar los escenarios');
@@ -391,7 +429,7 @@ const ScenarioManagement = () => {
 
   useEffect(() => {
     fetchScenarios();
-  }, []);
+  }, [catalogos]);
 
   // Mostrar modal
   const showModalMessage = (title, message, isSuccess = false, isConfirm = false) => {
@@ -670,7 +708,7 @@ const ScenarioManagement = () => {
                   <CardTitle>{scenario.titulo}</CardTitle>
                   <CardContent>
                     <p>{scenario.descripcion}</p>
-                    <p><strong>Catálogo ID:</strong> {scenario.id_catalogo}</p>
+                    <p><strong>Categoría:</strong> {scenario.nombre_catalogo}</p>
                   </CardContent>
                   <CardActions>
                     <ActionButton 
@@ -782,12 +820,14 @@ const ScenarioManagement = () => {
             {/* Lista de opciones */}
             <CardGrid>
               {options.map(option => (
-                <Card key={option.id_opcion}>
+                <OptionCard key={option.id_opcion}>
                   <CardTitle>{option.descripcion}</CardTitle>
-                  <CardContent>
-                    <p><strong>Solución:</strong> {option.solucion ? 'Sí' : 'No'}</p>
-                    <p><strong>Retroalimentación:</strong> {option.retroalimentacion}</p>
-                  </CardContent>
+                  <OptionContent>
+                    <strong>Solución:</strong> {option.solucion ? 'Sí' : 'No'}
+                  </OptionContent>
+                  <OptionContent>
+                    <strong>Retroalimentación:</strong> {option.retroalimentacion}
+                  </OptionContent>
                   <CardActions>
                     <ActionButton 
                       bgColor="#4CAF50" 
@@ -804,7 +844,7 @@ const ScenarioManagement = () => {
                       <MdDelete /> Eliminar
                     </ActionButton>
                   </CardActions>
-                </Card>
+                </OptionCard>
               ))}
             </CardGrid>
 

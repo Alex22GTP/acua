@@ -491,19 +491,17 @@ app.put("/api/user/:id/change-password", async (req, res) => {
   }
 });
 
-// Obtener estadísticas del usuario
+// Obtener estadísticas básicas del usuario
 app.get("/api/user/:id/statistics", async (req, res) => {
   const { id } = req.params;
   try {
-    // Obtener el número de escenarios resueltos correctamente
     const correctos = await pool.query(
-      "SELECT COUNT(*) AS correctos FROM Escenarios_resultados WHERE id_usuario = $1 AND resultado = true",
+      "SELECT COUNT(*) AS correctos FROM escenarios_resultados WHERE id_usuario = $1 AND resultado = true",
       [id]
     );
 
-    // Obtener el número total de intentos
     const totalIntentos = await pool.query(
-      "SELECT COUNT(*) AS total FROM Escenarios_resultados WHERE id_usuario = $1",
+      "SELECT COUNT(*) AS total FROM escenarios_resultados WHERE id_usuario = $1",
       [id]
     );
 
@@ -517,18 +515,21 @@ app.get("/api/user/:id/statistics", async (req, res) => {
   }
 });
 
-// Obtener respuestas del usuario
+
 app.get("/api/user/:id/responses", async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query(
-      "SELECT e.titulo, o.descripcion, er.resultado, er.fecha " +
-      "FROM Escenarios_resultados er " +
-      "JOIN Escenarios e ON er.id_escenario = e.id_escenario " +
-      "JOIN Opciones o ON er.id_opcion = o.id_opcion " +
-      "WHERE er.id_usuario = $1",
+      `SELECT e.titulo as escenario, c.nombre as catalogo, 
+              er.resultado, er.fecha
+       FROM escenarios_resultados er
+       JOIN escenarios e ON er.id_escenario = e.id_escenario
+       JOIN catalogos c ON e.id_catalogo = c.id_catalogo
+       WHERE er.id_usuario = $1
+       ORDER BY er.fecha DESC`,
       [id]
     );
+
     res.json(result.rows);
   } catch (error) {
     console.error("Error al obtener respuestas:", error);
@@ -536,6 +537,31 @@ app.get("/api/user/:id/responses", async (req, res) => {
   }
 });
 
+
+// Ruta para obtener el catálogo más popular (ya está correcta)
+app.get("/api/user/:id/popular-catalog", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT c.nombre as catalogo, COUNT(*) as count 
+       FROM escenarios_resultados er
+       JOIN escenarios e ON er.id_escenario = e.id_escenario
+       JOIN catalogos c ON e.id_catalogo = c.id_catalogo
+       WHERE er.id_usuario = $1
+       GROUP BY c.nombre
+       ORDER BY count DESC
+       LIMIT 1`,
+      [id]
+    );
+    
+    res.json({ 
+      popularCatalog: result.rows[0]?.catalogo || "Ninguno" 
+    });
+  } catch (error) {
+    console.error("Error al obtener catálogo popular:", error);
+    res.status(500).json({ message: "Error en el servidor" });
+  }
+});
 
 app.get("/api/searchCategories", async (req, res) => {
   const searchTerm = req.query.term;
@@ -920,3 +946,5 @@ app.get('/api/admin/escenarios/:id/imagen', async (req, res) => {
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });
+
+

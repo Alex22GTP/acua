@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import { MdBarChart, MdCheckCircle, MdAccessTime, MdTrendingUp } from "react-icons/md";
+import { MdBarChart, MdCheckCircle, MdStar, MdTrendingUp } from "react-icons/md";
 import Navbar from '../components/Navbar1';
 
-// Responsive styles
+
 const StatsContainer = styled.div`
   padding: 1.5rem;
   max-width: 1000px;
@@ -165,11 +165,14 @@ function Statistics() {
     correctos: 0,
     total: 0,
     successRate: 0,
-    averageTime: "0 min",
+    popularCatalog: "Ninguno",
   });
 
-  const [catalogDetails, setCatalogDetails] = useState([]);
+  const [allCatalogDetails, setAllCatalogDetails] = useState([]);
+  const [displayedDetails, setDisplayedDetails] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [maxRows] = useState(10);
+  const [showAll, setShowAll] = useState(false);
   const userId = localStorage.getItem("userId");
 
   useEffect(() => {
@@ -177,6 +180,7 @@ function Statistics() {
       try {
         setLoading(true);
         
+        // Obtener estadísticas básicas
         const statsResponse = await fetch(`http://localhost:5000/api/user/${userId}/statistics`);
         const statsData = await statsResponse.json();
 
@@ -184,25 +188,32 @@ function Statistics() {
           ? Math.round((statsData.correctos / statsData.total) * 100) 
           : 0;
 
+        // Obtener catálogo más popular
+        const popularResponse = await fetch(`http://localhost:5000/api/user/${userId}/popular-catalog`);
+        const popularData = await popularResponse.json();
+
+        // Obtener todas las respuestas
+        const responsesResponse = await fetch(`http://localhost:5000/api/user/${userId}/responses`);
+        const responsesData = await responsesResponse.json();
+
         setStats({
           correctos: statsData.correctos,
           total: statsData.total,
           successRate: successRate,
-          averageTime: "0 min",
+          popularCatalog: popularData.popularCatalog,
         });
 
-        const responsesResponse = await fetch(`http://localhost:5000/api/user/${userId}/responses`);
-        const responsesData = await responsesResponse.json();
-
-        const formattedDetails = responsesData.map((response, index) => ({
+        // Formatear todos los datos
+        const formattedDetails = responsesData.map((item, index) => ({
           id: index + 1,
-          name: response.titulo,
-          date: new Date(response.fecha).toLocaleDateString(),
-          score: response.resultado ? "Correcto" : "Incorrecto",
-          time: "0 min",
+          catalog: item.catalogo || "General",
+          scenario: item.escenario || "Sin nombre",
+          result: item.resultado ? "Correcto" : "Incorrecto",
+          date: item.fecha ? new Date(item.fecha).toLocaleDateString('es-ES') : "Sin fecha"
         }));
 
-        setCatalogDetails(formattedDetails);
+        setAllCatalogDetails(formattedDetails);
+        setDisplayedDetails(showAll ? formattedDetails : formattedDetails.slice(0, maxRows));
       } catch (error) {
         console.error("Error al obtener estadísticas:", error);
       } finally {
@@ -211,13 +222,18 @@ function Statistics() {
     };
 
     fetchStatistics();
-  }, [userId]);
+  }, [userId, maxRows, showAll]); // <-- showAll añadido a las dependencias
+
+  const handleShowAll = () => {
+    setShowAll(true);
+    setDisplayedDetails(allCatalogDetails);
+  };
 
   return (
     <>
       <Navbar />
       <StatsContainer>
-        <StatsHeader>Estadísticas de Catálogos Resueltos</StatsHeader>
+        <StatsHeader>Estadísticas de Escenarios Resueltos</StatsHeader>
 
         <StatsSummary>
           <StatCard>
@@ -246,44 +262,62 @@ function Statistics() {
 
           <StatCard>
             <StatIcon>
-              <MdAccessTime />
+              <MdStar />
             </StatIcon>
-            <StatValue>{stats.averageTime}</StatValue>
-            <StatLabel>Tiempo Promedio</StatLabel>
+            <StatValue>{stats.popularCatalog}</StatValue>
+            <StatLabel>Catálogo más Frecuente</StatLabel>
           </StatCard>
         </StatsSummary>
 
-        {loading ? (
+       
+          {loading ? (
           <NoDataMessage>Cargando estadísticas...</NoDataMessage>
-        ) : catalogDetails.length > 0 ? (
+        ) : displayedDetails.length > 0 ? (
           <StatsTableContainer>
             <StatsTable>
               <thead>
                 <TableRow>
+                  <TableHeader>Catálogo</TableHeader>
                   <TableHeader>Escenario</TableHeader>
-                  <TableHeader>Fecha</TableHeader>
                   <TableHeader>Resultado</TableHeader>
-                  <TableHeader>Tiempo</TableHeader>
+                  <TableHeader>Fecha</TableHeader>
                 </TableRow>
               </thead>
               <tbody>
-                {catalogDetails.map((catalog) => (
-                  <TableRow key={catalog.id}>
-                    <TableCell>{catalog.name}</TableCell>
-                    <TableCell>{catalog.date}</TableCell>
+                {displayedDetails.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell>{item.catalog}</TableCell>
+                    <TableCell>{item.scenario}</TableCell>
                     <TableCell>
                       <span style={{ 
-                        color: catalog.score === "Correcto" ? "#2a9d8f" : "#e76f51",
+                        color: item.result === "Correcto" ? "#2a9d8f" : "#e76f51",
                         fontWeight: 500
                       }}>
-                        {catalog.score}
+                        {item.result}
                       </span>
                     </TableCell>
-                    <TableCell>{catalog.time}</TableCell>
+                    <TableCell>{item.date}</TableCell>
                   </TableRow>
                 ))}
               </tbody>
             </StatsTable>
+            {!showAll && allCatalogDetails.length > maxRows && (
+              <div style={{ textAlign: 'center', marginTop: '10px' }}>
+                <button 
+                  onClick={handleShowAll}
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: '#457b9d',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Mostrar todos ({allCatalogDetails.length})
+                </button>
+              </div>
+            )}
           </StatsTableContainer>
         ) : (
           <NoDataMessage>No hay datos de estadísticas disponibles</NoDataMessage>

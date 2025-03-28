@@ -11,7 +11,7 @@ const EscenarioIncendios1 = () => {
   const [opciones, setOpciones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [timeLeft, setTimeLeft] = useState(10);
+  const [timeLeft, setTimeLeft] = useState(30);
   const [timerRunning, setTimerRunning] = useState(false);
   const [selectedOption, setSelectedOption] = useState(null);
   const [soundEnabled, setSoundEnabled] = useState(false);
@@ -187,7 +187,7 @@ const handleNextScenario = async () => {
         console.log("Navegando al siguiente escenario");
         setSelectedOption(null);
         setTimeUp(false);
-        setTimeLeft(10);
+        setTimeLeft(30);
         setTimerRunning(true);
         
         if (soundEnabled) {

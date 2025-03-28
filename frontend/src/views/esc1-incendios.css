@@ -182,6 +182,11 @@
         1px -1px 0 #000000,  /* Sombra superior derecha (blanca) */
         -1px 1px 0 #000000,  /* Sombra inferior izquierda (blanca) */
         1px 1px 0 #000000;   /* Sombra inferior derecha (blanca) */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        position: relative;
+        z-index: 1;
 }
 
 /* 📌 Cuadro Emergente */
@@ -323,5 +328,18 @@
         height: 80px;
         top: 15px;
         right: 15px;
+    }
+}
+
+/* Tablets y pantallas medianas */
+@media (max-width: 992px) {
+    .scenario-title {
+        font-size: 2rem;
+        max-width: calc(100% - 120px);
+    }
+    
+    .clock {
+        width: 70px;
+        height: 70px;
     }
 }

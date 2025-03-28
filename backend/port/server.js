@@ -793,7 +793,7 @@ app.get('/api/admin/escenarios', async (req, res) => {
       SELECT e.id_escenario, e.titulo, e.descripcion, e.id_catalogo, c.nombre as nombre_catalogo
       FROM escenarios e
       JOIN catalogos c ON e.id_catalogo = c.id_catalogo
-      ORDER BY e.id_escenario
+     ORDER BY e.id_escenario DESC
     `);
     res.json(result.rows);
   } catch (error) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback} from 'react';
 import styled from 'styled-components';
 import { MdAdd, MdDelete, MdEdit, MdImage, MdArrowBack, MdClose, MdCheck } from 'react-icons/md';
 import Navbar from '../components/NavbarAdmin';
@@ -367,6 +367,8 @@ const ScenarioManagement = () => {
   const [modalContent, setModalContent] = useState({});
   const [itemToDelete, setItemToDelete] = useState(null);
   const [deleteType, setDeleteType] = useState('');
+  const [showAllScenarios, setShowAllScenarios] = useState(false);
+
 
   // Obtener catálogos
   useEffect(() => {
@@ -396,7 +398,7 @@ const ScenarioManagement = () => {
       
       const data = await response.json();
       const scenariosWithCatalogName = data.map(scenario => {
-        const catalogo = catalogos.find(c => c.id_catalogo == scenario.id_catalogo);
+        const catalogo = catalogos.find(c => c.id_catalogo === scenario.id_catalogo);
         return {
           ...scenario,
           nombre_catalogo: catalogo?.nombre || 'Sin categoría',
@@ -440,9 +442,37 @@ const ScenarioManagement = () => {
     }
   };
 
-  useEffect(() => {
-    fetchScenarios();
+  const fetchScenariosMemoized = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://localhost:5000/api/admin/escenarios');
+      
+      if (!response.ok) {
+        throw new Error(`Error HTTP! estado: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      const scenariosWithCatalogName = data.map(scenario => {
+        const catalogo = catalogos.find(c => c.id_catalogo === scenario.id_catalogo);
+        return {
+          ...scenario,
+          nombre_catalogo: catalogo?.nombre || 'Sin categoría',
+          imagen: scenario.imagen !== null
+        };
+      });
+      setScenarios(scenariosWithCatalogName);
+    } catch (error) {
+      console.error('Error al obtener escenarios:', error);
+      showModalMessage('Error', 'No se pudieron cargar los escenarios');
+      setScenarios([]);
+    } finally {
+      setLoading(false);
+    }
   }, [catalogos]);
+  
+  useEffect(() => {
+    fetchScenariosMemoized();
+  }, [fetchScenariosMemoized]);
 
   // Mostrar modal
   const showModalMessage = (title, message, isSuccess = false, isConfirm = false) => {
@@ -690,68 +720,75 @@ const ScenarioManagement = () => {
     <>
       <Navbar />
       <AdminContainer>
-        <Section>
-          <AdminHeader>
-          <MdImage /> Gestión de Escenarios
+<Section>
+  <AdminHeader>
+    <MdImage /> Gestión de Escenarios
+  </AdminHeader>
+  <SectionHeader>
+    <MdImage /> Escenarios Disponibles
+    {scenarios.length > 6 && (
+      <ActionButton 
+        onClick={() => setShowAllScenarios(!showAllScenarios)}
+        style={{ marginLeft: 'auto', fontSize: '0.8rem' }}
+      >
+        {showAllScenarios ? 'Mostrar menos' : 'Mostrar todos'}
+      </ActionButton>
+    )}
+  </SectionHeader>
 
-          </AdminHeader>
-          <SectionHeader>
-            <MdImage /> Escenarios Disponibles
-          </SectionHeader>
-
-          {/* Lista de escenarios */}
-          <CardGrid>
-            {scenarios.map(scenario => (
-              <Card key={scenario.id_escenario}>
-                {scenario.imagen ? (
-                  <CardImageContainer>
-                    <CardImage
-                      src={`http://localhost:5000/api/admin/escenarios/${scenario.id_escenario}/imagen`}
-                      alt={scenario.titulo}
-                      onError={(e) => {
-                        e.target.onerror = null; 
-                        e.target.src = 'https://via.placeholder.com/300x180?text=Imagen+no+disponible';
-                      }}
-                    />
-                  </CardImageContainer>
-                ) : (
-                  <NoImagePlaceholder>
-                    <MdImage size={48} />
-                    <span style={{ marginTop: '10px' }}>Sin imagen</span>
-                  </NoImagePlaceholder>
-                )}
-                
-                <CardContentWrapper>
-                  <CardTitle>{scenario.titulo}</CardTitle>
-                  <CardContent>
-                    <p>{scenario.descripcion}</p>
-                    <p><strong>Categoría:</strong> {scenario.nombre_catalogo}</p>
-                  </CardContent>
-                  <CardActions>
-                    <ActionButton 
-                      bgColor="#4CAF50" 
-                      hoverColor="#45a049"
-                      onClick={() => editScenario(scenario)}
-                    >
-                      <MdEdit /> Editar
-                    </ActionButton>
-                    <ActionButton 
-                      bgColor="#f44336" 
-                      hoverColor="#d32f2f"
-                      onClick={() => confirmDelete(scenario.id_escenario, 'scenario')}
-                    >
-                      <MdDelete /> Eliminar
-                    </ActionButton>
-                    <ActionButton 
-                      onClick={() => fetchOptions(scenario.id_escenario)}
-                    >
-                      Ver Opciones
-                    </ActionButton>
-                  </CardActions>
-                </CardContentWrapper>
-              </Card>
-            ))}
-          </CardGrid>
+  {/* Lista de escenarios */}
+  <CardGrid>
+    {(showAllScenarios ? scenarios : scenarios.slice(-6)).map(scenario => (
+      <Card key={scenario.id_escenario}>
+        {scenario.imagen ? (
+          <CardImageContainer>
+            <CardImage
+              src={`http://localhost:5000/api/admin/escenarios/${scenario.id_escenario}/imagen`}
+              alt={scenario.titulo}
+              onError={(e) => {
+                e.target.onerror = null; 
+                e.target.src = 'https://via.placeholder.com/300x180?text=Imagen+no+disponible';
+              }}
+            />
+          </CardImageContainer>
+        ) : (
+          <NoImagePlaceholder>
+            <MdImage size={48} />
+            <span style={{ marginTop: '10px' }}>Sin imagen</span>
+          </NoImagePlaceholder>
+        )}
+        
+        <CardContentWrapper>
+          <CardTitle>{scenario.titulo}</CardTitle>
+          <CardContent>
+            <p>{scenario.descripcion}</p>
+            <p><strong>Categoría:</strong> {scenario.nombre_catalogo}</p>
+          </CardContent>
+          <CardActions>
+            <ActionButton 
+              bgColor="#4CAF50" 
+              hoverColor="#45a049"
+              onClick={() => editScenario(scenario)}
+            >
+              <MdEdit /> Editar
+            </ActionButton>
+            <ActionButton 
+              bgColor="#f44336" 
+              hoverColor="#d32f2f"
+              onClick={() => confirmDelete(scenario.id_escenario, 'scenario')}
+            >
+              <MdDelete /> Eliminar
+            </ActionButton>
+            <ActionButton 
+              onClick={() => fetchOptions(scenario.id_escenario)}
+            >
+              Ver Opciones
+            </ActionButton>
+          </CardActions>
+        </CardContentWrapper>
+      </Card>
+    ))}
+  </CardGrid>
 
           {/* Formulario de escenario */}
           <FormContainer>

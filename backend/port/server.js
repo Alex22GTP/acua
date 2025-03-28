@@ -526,7 +526,7 @@ app.get("/api/user/:id/responses", async (req, res) => {
        JOIN escenarios e ON er.id_escenario = e.id_escenario
        JOIN catalogos c ON e.id_catalogo = c.id_catalogo
        WHERE er.id_usuario = $1
-       ORDER BY er.fecha DESC`,
+       ORDER BY er.fecha DESC`, // <-- ASC para ascendente (viejo a nuevo), DESC para descendente (nuevo a viejo)
       [id]
     );
 

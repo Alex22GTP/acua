@@ -2,7 +2,6 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const { Pool } = require("pg");
-const jwt = require("jsonwebtoken"); // <-- Añade esto aquí
 const multer = require("multer");
 
 const app = express();
@@ -21,42 +20,18 @@ const pool = new Pool({
 app.use(express.json());
 app.use(cors({ origin: "http://localhost:3000" }));
 
-const authenticateToken = (req, res, next) => {
-  const token = req.headers['authorization']?.split(' ')[1]; // Bearer <token>
-  
-  if (!token) {
-    return res.status(401).json({ message: "Acceso no autorizado" });
-  }
-
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ message: "Token inválido o expirado" });
-    }
-    req.user = user;
-    next();
-  });
-};
-
-const authorizeRole = (role) => {
-  return (req, res, next) => {
-    if (req.user.id_rol !== role) {
-      return res.status(403).json({ message: "No tienes permisos suficientes" });
-    }
-    next();
-  };
-};
-
-
-
 // Iniciar servidor
 app.listen(port, () => {
   console.log(`✅ Servidor corriendo en http://localhost:${port}`);
 });
 
+// Ruta de prueba
+app.get("/", (req, res) => {
+  res.send("¡Servidor backend funcionando!");
+});
 
 // Configuración de Multer para manejar imágenes en memoria
 const storage = multer.memoryStorage();
-
 
 
 
@@ -179,42 +154,27 @@ app.get("/escenarios/:id_catalogo/:id", async (req, res) => {
   const { id_catalogo, id } = req.params;
   console.log(`Solicitando escenario con id_catalogo: ${id_catalogo}, id_escenario: ${id}`);
 
+
   try {
-    // 1. Primero verificamos si el escenario existe
     const escenarioQuery = `
       SELECT e.id_escenario, e.titulo, e.descripcion, e.imagen
       FROM escenarios e
       WHERE e.id_escenario = $1 AND e.id_catalogo = $2
     `;
-    
-    const escenarioResult = await pool.query(escenarioQuery, [id, id_catalogo]);
-    
-    if (escenarioResult.rows.length === 0) {
-      console.error("Escenario no encontrado en la BD");
-      return res.status(404).json({ 
-        error: "Escenario no encontrado",
-        hasNext: false // Indicamos explícitamente que no hay más escenarios
-      });
-    }
-
-    // 2. Obtenemos las opciones del escenario
     const opcionesQuery = `
       SELECT o.id_opcion, o.descripcion, o.solucion, o.retroalimentacion
       FROM opciones o
       WHERE o.id_escenario = $1
-      ORDER BY o.id_opcion
     `;
+
+    const escenarioResult = await pool.query(escenarioQuery, [id, id_catalogo]);
+    console.log("Resultado de la consulta:", escenarioResult.rows);
     const opcionesResult = await pool.query(opcionesQuery, [id]);
 
-    // 3. Verificamos si existe un siguiente escenario en el mismo catálogo
-    const nextEscenarioQuery = `
-      SELECT id_escenario 
-      FROM escenarios 
-      WHERE id_catalogo = $1 AND id_escenario > $2
-      ORDER BY id_escenario ASC 
-      LIMIT 1
-    `;
-    const nextEscenarioResult = await pool.query(nextEscenarioQuery, [id_catalogo, id]);
+    if (escenarioResult.rows.length === 0) {
+      console.error("Escenario no encontrado en la BD");
+      return res.status(404).json({ error: "Escenario no encontrado" });
+    }
 
     // Convertir la imagen BYTEA a base64
     const imagenBase64 = escenarioResult.rows[0].imagen
@@ -227,21 +187,15 @@ app.get("/escenarios/:id_catalogo/:id", async (req, res) => {
         id_escenario: escenarioResult.rows[0].id_escenario,
         titulo: escenarioResult.rows[0].titulo,
         descripcion: escenarioResult.rows[0].descripcion,
-        imagen: imagenBase64 ? `data:image/png;base64,${imagenBase64}` : null,
+        imagen: imagenBase64 ? `data:image/png;base64,${imagenBase64}` : null, // Devuelve la imagen como data URL
       },
       opciones: opcionesResult.rows,
-      hasNext: nextEscenarioResult.rows.length > 0 // Indicamos si hay más escenarios
     };
 
-    console.log("Escenario encontrado, hasNext:", response.hasNext);
     res.json(response);
-    
   } catch (error) {
     console.error("Error al obtener el escenario:", error);
-    res.status(500).json({ 
-      error: "Error del servidor",
-      hasNext: false // Por seguridad, asumimos que no hay más escenarios si hay error
-    });
+    res.status(500).json({ error: "Error del servidor" });
   }
 });
 
@@ -290,44 +244,42 @@ app.post("/api/register", async (req, res) => {
 
 
 
+
 app.post("/api/login", async (req, res) => {
   const { email, password } = req.body;
 
   try {
+    // Buscar usuario en la BD
     const result = await pool.query(
       "SELECT id_usuario, nombre, correo, contraseña, id_rol FROM usuario WHERE correo = $1", 
       [email]
     );
 
     if (result.rows.length === 0) {
-      return res.status(400).json({ message: "Credenciales incorrectas" });
+      return res.status(400).json({ message: "Correo o contraseña incorrectos" });
     }
 
     const user = result.rows[0];
+
+    // Verificar contraseña
     const passwordMatch = await bcrypt.compare(password, user.contraseña);
-    
     if (!passwordMatch) {
-      return res.status(400).json({ message: "Credenciales incorrectas" });
+      return res.status(400).json({ message: "Correo o contraseña incorrectos" });
     }
 
-    // Generar token JWT (usa una variable de entorno JWT_SECRET)
-    const token = jwt.sign(
-      { id: user.id_usuario, id_rol: user.id_rol },
-      process.env.JWT_SECRET || "fallback_secret", // <-- Usa un valor por defecto solo en desarrollo
-      { expiresIn: "1h" }
-    );
-
+    // Devolver el nombre del usuario, userId y id_rol
     res.json({ 
       success: true, 
-      token,  // Enviar token al frontend
-      userId: user.id_usuario,
-      id_rol: user.id_rol
+      message: "Inicio de sesión exitoso", 
+      userId: user.id_usuario, 
+      nombre: user.nombre, // Añadir el nombre del usuario
+      id_rol: user.id_rol  // Añadir el id_rol del usuario
     });
   } catch (error) {
+    console.error("Error en el login:", error);
     res.status(500).json({ message: "Error en el servidor" });
   }
 });
-
 
 app.put("/api/editar-perfil/:userId", async (req, res) => {
   const { userId } = req.params;
@@ -652,21 +604,12 @@ app.get("/api/searchCategories", async (req, res) => {
 
 
 
-// Ruta de prueba pública (no requiere autenticación)
-app.get("/", (req, res) => {
-  res.send("¡Servidor backend funcionando!");
-});
-
-// 🔐 Rutas protegidas
-app.get("/api/user-data", authenticateToken, (req, res) => {
-  res.json({ message: "Datos privados", user: req.user });
-});
-
-app.get("/api/admin/users", authenticateToken, authorizeRole(1), async (req, res) => {
+app.get("/api/admin/users", async (req, res) => {
   try {
     const result = await pool.query("SELECT id_usuario, nombre, correo, id_rol FROM usuario");
     res.json(result.rows);
   } catch (error) {
+    console.error("Error al obtener usuarios:", error);
     res.status(500).json({ message: "Error en el servidor" });
   }
 });

@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { MdPersonAdd, MdDelete, MdPeople, MdAdminPanelSettings, MdPerson, MdGroup } from 'react-icons/md';
 import Navbar from '../components/NavbarAdmin';
 
+
 // Estilos basados en tu CSS
 const AdminContainer = styled.div`
   padding: 2rem;

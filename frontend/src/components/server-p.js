@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const { Pool } = require("pg");
+const jwt = require("jsonwebtoken"); // <-- Añade esto aquí
 const multer = require("multer");
 
 const app = express();
@@ -20,19 +21,66 @@ const pool = new Pool({
 app.use(express.json());
 app.use(cors({ origin: "http://localhost:3000" }));
 
+const authenticateToken = (req, res, next) => {
+  const token = req.headers['authorization']?.split(' ')[1]; // Bearer <token>
+  
+  if (!token) {
+    return res.status(401).json({ message: "Acceso no autorizado" });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ message: "Token inválido o expirado" });
+    }
+    req.user = user;
+    next();
+  });
+};
+
+const authorizeRole = (role) => {
+  return (req, res, next) => {
+    if (req.user.id_rol !== role) {
+      return res.status(403).json({ message: "No tienes permisos suficientes" });
+    }
+    next();
+  };
+};
+
+
+
 // Iniciar servidor
 app.listen(port, () => {
   console.log(`✅ Servidor corriendo en http://localhost:${port}`);
 });
 
-// Ruta de prueba
-app.get("/", (req, res) => {
-  res.send("¡Servidor backend funcionando!");
-});
 
 // Configuración de Multer para manejar imágenes en memoria
 const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+
+
+
+
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Solo se permiten imágenes'), false);
+  }
+};
+
+// Configuración de upload para escenarios
+const uploadEscenario = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // Límite de 5MB
+  fileFilter: fileFilter
+});
+
+// Configuración de upload para imágenes generales
+const upload = multer({ 
+  storage: storage,
+  fileFilter: fileFilter
+});
+
 
 // Subir imagen de prueba
 app.post("/subir-imagen-prueba", upload.single("imagen"), async (req, res) => {
@@ -221,42 +269,44 @@ app.post("/api/register", async (req, res) => {
 
 
 
-
 app.post("/api/login", async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Buscar usuario en la BD
     const result = await pool.query(
       "SELECT id_usuario, nombre, correo, contraseña, id_rol FROM usuario WHERE correo = $1", 
       [email]
     );
 
     if (result.rows.length === 0) {
-      return res.status(400).json({ message: "Correo o contraseña incorrectos" });
+      return res.status(400).json({ message: "Credenciales incorrectas" });
     }
 
     const user = result.rows[0];
-
-    // Verificar contraseña
     const passwordMatch = await bcrypt.compare(password, user.contraseña);
+    
     if (!passwordMatch) {
-      return res.status(400).json({ message: "Correo o contraseña incorrectos" });
+      return res.status(400).json({ message: "Credenciales incorrectas" });
     }
 
-    // Devolver el nombre del usuario, userId y id_rol
+    // Generar token JWT (usa una variable de entorno JWT_SECRET)
+    const token = jwt.sign(
+      { id: user.id_usuario, id_rol: user.id_rol },
+      process.env.JWT_SECRET || "fallback_secret", // <-- Usa un valor por defecto solo en desarrollo
+      { expiresIn: "1h" }
+    );
+
     res.json({ 
       success: true, 
-      message: "Inicio de sesión exitoso", 
-      userId: user.id_usuario, 
-      nombre: user.nombre, // Añadir el nombre del usuario
-      id_rol: user.id_rol  // Añadir el id_rol del usuario
+      token,  // Enviar token al frontend
+      userId: user.id_usuario,
+      id_rol: user.id_rol
     });
   } catch (error) {
-    console.error("Error en el login:", error);
     res.status(500).json({ message: "Error en el servidor" });
   }
 });
+
 
 app.put("/api/editar-perfil/:userId", async (req, res) => {
   const { userId } = req.params;
@@ -469,19 +519,17 @@ app.put("/api/user/:id/change-password", async (req, res) => {
   }
 });
 
-// Obtener estadísticas del usuario
+// Obtener estadísticas básicas del usuario
 app.get("/api/user/:id/statistics", async (req, res) => {
   const { id } = req.params;
   try {
-    // Obtener el número de escenarios resueltos correctamente
     const correctos = await pool.query(
-      "SELECT COUNT(*) AS correctos FROM Escenarios_resultados WHERE id_usuario = $1 AND resultado = true",
+      "SELECT COUNT(*) AS correctos FROM escenarios_resultados WHERE id_usuario = $1 AND resultado = true",
       [id]
     );
 
-    // Obtener el número total de intentos
     const totalIntentos = await pool.query(
-      "SELECT COUNT(*) AS total FROM Escenarios_resultados WHERE id_usuario = $1",
+      "SELECT COUNT(*) AS total FROM escenarios_resultados WHERE id_usuario = $1",
       [id]
     );
 
@@ -495,18 +543,21 @@ app.get("/api/user/:id/statistics", async (req, res) => {
   }
 });
 
-// Obtener respuestas del usuario
+
 app.get("/api/user/:id/responses", async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query(
-      "SELECT e.titulo, o.descripcion, er.resultado, er.fecha " +
-      "FROM Escenarios_resultados er " +
-      "JOIN Escenarios e ON er.id_escenario = e.id_escenario " +
-      "JOIN Opciones o ON er.id_opcion = o.id_opcion " +
-      "WHERE er.id_usuario = $1",
+      `SELECT e.titulo as escenario, c.nombre as catalogo, 
+              er.resultado, er.fecha
+       FROM escenarios_resultados er
+       JOIN escenarios e ON er.id_escenario = e.id_escenario
+       JOIN catalogos c ON e.id_catalogo = c.id_catalogo
+       WHERE er.id_usuario = $1
+       ORDER BY er.fecha DESC`, // <-- ASC para ascendente (viejo a nuevo), DESC para descendente (nuevo a viejo)
       [id]
     );
+
     res.json(result.rows);
   } catch (error) {
     console.error("Error al obtener respuestas:", error);
@@ -514,6 +565,31 @@ app.get("/api/user/:id/responses", async (req, res) => {
   }
 });
 
+
+// Ruta para obtener el catálogo más popular (ya está correcta)
+app.get("/api/user/:id/popular-catalog", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT c.nombre as catalogo, COUNT(*) as count 
+       FROM escenarios_resultados er
+       JOIN escenarios e ON er.id_escenario = e.id_escenario
+       JOIN catalogos c ON e.id_catalogo = c.id_catalogo
+       WHERE er.id_usuario = $1
+       GROUP BY c.nombre
+       ORDER BY count DESC
+       LIMIT 1`,
+      [id]
+    );
+    
+    res.json({ 
+      popularCatalog: result.rows[0]?.catalogo || "Ninguno" 
+    });
+  } catch (error) {
+    console.error("Error al obtener catálogo popular:", error);
+    res.status(500).json({ message: "Error en el servidor" });
+  }
+});
 
 app.get("/api/searchCategories", async (req, res) => {
   const searchTerm = req.query.term;
@@ -555,12 +631,21 @@ app.get("/api/searchCategories", async (req, res) => {
 
 
 
-app.get("/api/admin/users", async (req, res) => {
+// Ruta de prueba pública (no requiere autenticación)
+app.get("/", (req, res) => {
+  res.send("¡Servidor backend funcionando!");
+});
+
+// 🔐 Rutas protegidas
+app.get("/api/user-data", authenticateToken, (req, res) => {
+  res.json({ message: "Datos privados", user: req.user });
+});
+
+app.get("/api/admin/users", authenticateToken, authorizeRole(1), async (req, res) => {
   try {
     const result = await pool.query("SELECT id_usuario, nombre, correo, id_rol FROM usuario");
     res.json(result.rows);
   } catch (error) {
-    console.error("Error al obtener usuarios:", error);
     res.status(500).json({ message: "Error en el servidor" });
   }
 });
@@ -611,17 +696,34 @@ app.delete("/api/admin/catalogos/:id", async (req, res) => {
   }
 });
 
-app.post("/api/admin/catalogos", async (req, res) => {
-  const { nombre, imagen } = req.body;
+app.post('/api/admin/catalogos', upload.single('imagen'), async (req, res) => {
   try {
+    const { nombre } = req.body;
+    const imagenBuffer = req.file?.buffer;
+
+    // Validación de campos requeridos
+    if (!nombre || !nombre.trim()) {
+      return res.status(400).json({ error: 'El nombre del catálogo es requerido' });
+    }
+
+    if (!imagenBuffer) {
+      return res.status(400).json({ error: 'La imagen es requerida' });
+    }
+
     const result = await pool.query(
-      "INSERT INTO Catalogos (nombre, imagen) VALUES ($1, $2) RETURNING *",
-      [nombre, imagen]
+      'INSERT INTO catalogos (nombre, imagen) VALUES ($1, $2) RETURNING *',
+      [nombre.trim(), imagenBuffer]
     );
+
     res.json(result.rows[0]);
   } catch (error) {
-    console.error("Error al crear catálogo:", error);
-    res.status(500).json({ message: "Error en el servidor" });
+    console.error('Error al crear catálogo:', error);
+    
+    if (error.code === '23502') { // Error de violación de NOT NULL
+      return res.status(400).json({ error: 'Todos los campos son requeridos' });
+    }
+    
+    res.status(500).json({ error: 'Error al crear catálogo' });
   }
 });
 
@@ -717,3 +819,169 @@ app.delete('/api/admin/users/:id', async (req, res) => {
     res.status(500).json({ message: 'Error en el servidor' });
   }
 });
+
+
+
+// Obtener todos los escenarios (para administración)
+app.get('/api/admin/escenarios', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT e.id_escenario, e.titulo, e.descripcion, e.id_catalogo, c.nombre as nombre_catalogo
+      FROM escenarios e
+      JOIN catalogos c ON e.id_catalogo = c.id_catalogo
+      ORDER BY e.id_escenario
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error al obtener escenarios:', error);
+    res.status(500).json({ error: 'Error al obtener escenarios' });
+  }
+});
+
+// Obtener opciones de un escenario (para administración)
+app.get('/api/admin/escenarios/:id/opciones', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(`
+      SELECT id_opcion, descripcion, solucion, retroalimentacion
+      FROM opciones
+      WHERE id_escenario = $1
+      ORDER BY id_opcion
+    `, [id]);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error al obtener opciones:', error);
+    res.status(500).json({ error: 'Error al obtener opciones' });
+  }
+});
+
+// Crear/Actualizar escenario
+app.post('/api/admin/escenarios', uploadEscenario.single('imagen'), async (req, res) => {
+  const { titulo, descripcion, id_catalogo } = req.body;
+  const imagenBuffer = req.file?.buffer;
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO escenarios (titulo, descripcion, id_catalogo, imagen)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [titulo, descripcion, id_catalogo, imagenBuffer]
+    );
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error al crear escenario:', error);
+    res.status(500).json({ error: 'Error al crear escenario' });
+  }
+});
+
+
+// Actualizar escenario (con o sin imagen)
+app.put('/api/admin/escenarios/:id', uploadEscenario.single('imagen'), async (req, res) => {
+  const { id } = req.params;
+  const { titulo, descripcion, id_catalogo } = req.body;
+  const imagenBuffer = req.file?.buffer;
+
+  try {
+    // Si se subió una nueva imagen, actualizarla, de lo contrario mantener la existente
+    let query, params;
+    if (imagenBuffer) {
+      query = `UPDATE escenarios 
+               SET titulo = $1, descripcion = $2, id_catalogo = $3, imagen = $4
+               WHERE id_escenario = $5 RETURNING *`;
+      params = [titulo, descripcion, id_catalogo, imagenBuffer, id];
+    } else {
+      query = `UPDATE escenarios 
+               SET titulo = $1, descripcion = $2, id_catalogo = $3
+               WHERE id_escenario = $4 RETURNING *`;
+      params = [titulo, descripcion, id_catalogo, id];
+    }
+
+    const result = await pool.query(query, params);
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error al actualizar escenario:', error);
+    res.status(500).json({ error: 'Error al actualizar escenario' });
+  }
+});
+
+// Eliminar escenario
+app.delete('/api/admin/escenarios/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Primero eliminar las opciones relacionadas
+    await pool.query('DELETE FROM opciones WHERE id_escenario = $1', [id]);
+    // Luego eliminar el escenario
+    await pool.query('DELETE FROM escenarios WHERE id_escenario = $1', [id]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error al eliminar escenario:', error);
+    res.status(500).json({ error: 'Error al eliminar escenario' });
+  }
+});
+
+// Operaciones CRUD para opciones
+app.post('/api/admin/opciones', async (req, res) => {
+  const { descripcion, solucion, retroalimentacion, id_escenario } = req.body;
+  try {
+    const result = await pool.query(
+      `INSERT INTO opciones (descripcion, solucion, retroalimentacion, id_escenario)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [descripcion, solucion, retroalimentacion, id_escenario]
+    );
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error al crear opción:', error);
+    res.status(500).json({ error: 'Error al crear opción' });
+  }
+});
+
+app.put('/api/admin/opciones/:id', async (req, res) => {
+  const { id } = req.params;
+  const { descripcion, solucion, retroalimentacion } = req.body;
+  try {
+    const result = await pool.query(
+      `UPDATE opciones 
+       SET descripcion = $1, solucion = $2, retroalimentacion = $3
+       WHERE id_opcion = $4 RETURNING *`,
+      [descripcion, solucion, retroalimentacion, id]
+    );
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error al actualizar opción:', error);
+    res.status(500).json({ error: 'Error al actualizar opción' });
+  }
+});
+
+app.delete('/api/admin/opciones/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM opciones WHERE id_opcion = $1', [id]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error al eliminar opción:', error);
+    res.status(500).json({ error: 'Error al eliminar opción' });
+  }
+});
+
+// Ruta para obtener imagen de escenario
+app.get('/api/admin/escenarios/:id/imagen', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      "SELECT imagen FROM escenarios WHERE id_escenario = $1",
+      [id]
+    );
+
+    if (result.rows.length === 0 || !result.rows[0].imagen) {
+      return res.status(404).json({ error: "Imagen no encontrada" });
+    }
+
+    const imagenBuffer = result.rows[0].imagen;
+    res.setHeader("Content-Type", "image/jpeg");
+    res.send(imagenBuffer);
+  } catch (error) {
+    console.error("Error al obtener imagen:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+

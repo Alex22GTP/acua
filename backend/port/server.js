@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const { Pool } = require("pg");
+const jwt = require("jsonwebtoken"); // <-- Añade esto aquí
 const multer = require("multer");
 
 const app = express();
@@ -20,18 +21,43 @@ const pool = new Pool({
 app.use(express.json());
 app.use(cors({ origin: "http://localhost:3000" }));
 
+const authenticateToken = (req, res, next) => {
+  const token = req.headers['authorization']?.split(' ')[1]; // Bearer <token>
+  
+  if (!token) {
+    return res.status(401).json({ message: "Acceso no autorizado" });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ message: "Token inválido o expirado" });
+    }
+    req.user = user;
+    next();
+  });
+};
+
+const authorizeRole = (role) => {
+  return (req, res, next) => {
+    if (req.user.id_rol !== role) {
+      return res.status(403).json({ message: "No tienes permisos suficientes" });
+    }
+    next();
+  };
+};
+
+
+
 // Iniciar servidor
 app.listen(port, () => {
   console.log(`✅ Servidor corriendo en http://localhost:${port}`);
 });
 
-// Ruta de prueba
-app.get("/", (req, res) => {
-  res.send("¡Servidor backend funcionando!");
-});
 
 // Configuración de Multer para manejar imágenes en memoria
 const storage = multer.memoryStorage();
+
+
 
 
 const fileFilter = (req, file, cb) => {
@@ -243,42 +269,44 @@ app.post("/api/register", async (req, res) => {
 
 
 
-
 app.post("/api/login", async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Buscar usuario en la BD
     const result = await pool.query(
       "SELECT id_usuario, nombre, correo, contraseña, id_rol FROM usuario WHERE correo = $1", 
       [email]
     );
 
     if (result.rows.length === 0) {
-      return res.status(400).json({ message: "Correo o contraseña incorrectos" });
+      return res.status(400).json({ message: "Credenciales incorrectas" });
     }
 
     const user = result.rows[0];
-
-    // Verificar contraseña
     const passwordMatch = await bcrypt.compare(password, user.contraseña);
+    
     if (!passwordMatch) {
-      return res.status(400).json({ message: "Correo o contraseña incorrectos" });
+      return res.status(400).json({ message: "Credenciales incorrectas" });
     }
 
-    // Devolver el nombre del usuario, userId y id_rol
+    // Generar token JWT (usa una variable de entorno JWT_SECRET)
+    const token = jwt.sign(
+      { id: user.id_usuario, id_rol: user.id_rol },
+      process.env.JWT_SECRET || "fallback_secret", // <-- Usa un valor por defecto solo en desarrollo
+      { expiresIn: "1h" }
+    );
+
     res.json({ 
       success: true, 
-      message: "Inicio de sesión exitoso", 
-      userId: user.id_usuario, 
-      nombre: user.nombre, // Añadir el nombre del usuario
-      id_rol: user.id_rol  // Añadir el id_rol del usuario
+      token,  // Enviar token al frontend
+      userId: user.id_usuario,
+      id_rol: user.id_rol
     });
   } catch (error) {
-    console.error("Error en el login:", error);
     res.status(500).json({ message: "Error en el servidor" });
   }
 });
+
 
 app.put("/api/editar-perfil/:userId", async (req, res) => {
   const { userId } = req.params;
@@ -603,12 +631,21 @@ app.get("/api/searchCategories", async (req, res) => {
 
 
 
-app.get("/api/admin/users", async (req, res) => {
+// Ruta de prueba pública (no requiere autenticación)
+app.get("/", (req, res) => {
+  res.send("¡Servidor backend funcionando!");
+});
+
+// 🔐 Rutas protegidas
+app.get("/api/user-data", authenticateToken, (req, res) => {
+  res.json({ message: "Datos privados", user: req.user });
+});
+
+app.get("/api/admin/users", authenticateToken, authorizeRole(1), async (req, res) => {
   try {
     const result = await pool.query("SELECT id_usuario, nombre, correo, id_rol FROM usuario");
     res.json(result.rows);
   } catch (error) {
-    console.error("Error al obtener usuarios:", error);
     res.status(500).json({ message: "Error en el servidor" });
   }
 });

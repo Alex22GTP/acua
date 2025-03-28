@@ -743,6 +743,8 @@ app.get('/api/admin/users', async (req, res) => {
     const result = await pool.query(`
       SELECT id_usuario, nombre, apellido_paterno, apellido_materno, correo, id_rol 
       FROM usuario
+      ORDER BY id_usuario DESC
+
     `);
     res.json(result.rows);
   } catch (error) {

@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { MdPersonAdd, MdDelete, MdPeople, MdAdminPanelSettings, MdPerson, MdGroup } from 'react-icons/md';
 import Navbar from '../components/NavbarAdmin';
-
 
 // Estilos basados en tu CSS
 const AdminContainer = styled.div`
@@ -283,10 +282,12 @@ const UserManagement = () => {
     password: '',
     id_rol: '2'
   });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Inicialmente en true para la carga inicial
   const [showModal, setShowModal] = useState(false);
   const [modalContent, setModalContent] = useState({});
   const [userToDelete, setUserToDelete] = useState(null);
+  const [showAllUsers, setShowAllUsers] = useState(false);
+  const [displayedUsers, setDisplayedUsers] = useState([]);
 
   // Estadísticas
   const totalUsers = users.length;
@@ -294,22 +295,36 @@ const UserManagement = () => {
   const regularUsers = totalUsers - adminUsers;
 
   // Obtener todos los usuarios
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const response = await fetch('http://localhost:5000/api/admin/users');
+      if (!response.ok) {
+        throw new Error('Error al obtener usuarios');
+      }
       const data = await response.json();
-      setUsers(data);
+      const sortedUsers = data.sort((a, b) => b.id_usuario - a.id_usuario);
+      setUsers(sortedUsers);
+      setDisplayedUsers(sortedUsers.slice(0, 10));
     } catch (error) {
       console.error('Error al obtener usuarios:', error);
       showModalMessage('Error', 'No se pudieron cargar los usuarios');
+    } finally {
+      setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchUsers();
   }, []);
 
-  // Manejar cambios en el formulario
+  // Cargar usuarios al montar el componente
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  // Actualizar usuarios mostrados cuando cambia showAllUsers
+  useEffect(() => {
+    if (users.length > 0) {
+      setDisplayedUsers(showAllUsers ? users.slice(0, 50) : users.slice(0, 10));
+    }
+  }, [showAllUsers, users]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -317,6 +332,8 @@ const UserManagement = () => {
       [name]: value
     }));
   };
+
+
 
   // Mostrar modal con mensaje
   const showModalMessage = (title, message, isSuccess = false) => {
@@ -404,32 +421,40 @@ const UserManagement = () => {
   return (
     
     <AdminContainer>
-            <Navbar />
-      
-      <AdminHeader>
-        <MdPeople /> Gestión de Usuarios
-      </AdminHeader>
+    <Navbar />
+    
+    <AdminHeader>
+      <MdPeople /> Gestión de Usuarios
+    </AdminHeader>
 
-      {/* Estadísticas */}
-      <StatsContainer>
-        <StatCard>
-          <MdGroup size={24} color="#1d3557" />
-          <StatValue>{totalUsers}</StatValue>
-          <StatLabel>Usuarios Totales</StatLabel>
-        </StatCard>
-        
-        <StatCard>
-          <MdAdminPanelSettings size={24} color="#1d3557" />
-          <StatValue>{adminUsers}</StatValue>
-          <StatLabel>Administradores</StatLabel>
-        </StatCard>
-        
-        <StatCard>
-          <MdPerson size={24} color="#1d3557" />
-          <StatValue>{regularUsers}</StatValue>
-          <StatLabel>Usuarios Normales</StatLabel>
-        </StatCard>
-      </StatsContainer>
+    {loading ? (
+      <div style={{ textAlign: 'center', padding: '2rem' }}>
+        Cargando usuarios...
+      </div>
+    ) : (
+      <>
+        {/* Estadísticas */}
+        <StatsContainer>
+          <StatCard>
+            <MdGroup size={24} color="#1d3557" />
+            <StatValue>{totalUsers}</StatValue>
+            <StatLabel>Usuarios Totales</StatLabel>
+          </StatCard>
+          
+          <StatCard>
+            <MdAdminPanelSettings size={24} color="#1d3557" />
+            <StatValue>{adminUsers}</StatValue>
+            <StatLabel>Administradores</StatLabel>
+          </StatCard>
+          
+          <StatCard>
+            <MdPerson size={24} color="#1d3557" />
+            <StatValue>{regularUsers}</StatValue>
+            <StatLabel>Usuarios Normales</StatLabel>
+          </StatCard>
+        </StatsContainer>
+
+
 
       {/* Formulario para agregar usuarios */}
       <FormContainer>
@@ -510,41 +535,87 @@ const UserManagement = () => {
         </form>
       </FormContainer>
 
-      {/* Tabla de usuarios */}
-      <SectionTitle>
-        <MdGroup /> Usuarios Registrados
-      </SectionTitle>
-      
-      <Table>
-        <thead>
-          <tr>
-            <Th>Nombre</Th>
-            <Th>Correo</Th>
-            <Th>Tipo</Th>
-            <Th>Acciones</Th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map(user => (
-            <tr key={user.id_usuario}>
-              <Td>{user.nombre}</Td>
-              <Td>{user.correo}</Td>
-              <Td>
-                {user.id_rol === 1 ? (
-                  <span style={{ color: '#e63946', fontWeight: 'bold' }}>Administrador</span>
-                ) : (
-                  <span>Usuario</span>
-                )}
-              </Td>
-              <Td>
-                <Button className="danger" onClick={() => confirmDelete(user.id_usuario)}>
-                  <MdDelete /> Eliminar
-                </Button>
-              </Td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
+     <SectionTitle>
+            <MdGroup /> Usuarios Registrados
+            {users.length > 10 && (
+              <Button 
+                onClick={() => setShowAllUsers(!showAllUsers)}
+                style={{ marginLeft: '1rem', fontSize: '0.8rem' }}
+                className="primary"
+              >
+                {showAllUsers ? 'Mostrar menos' : 'Mostrar todos'}
+              </Button>
+            )}
+          </SectionTitle>
+          
+          {displayedUsers.length > 0 ? (
+            <>
+              <Table>
+                  <thead>
+                    <tr>
+                      <Th>#</Th>
+                      <Th>Nombre</Th>
+                      <Th>Correo</Th>
+                      <Th>Tipo</Th>
+                      <Th>Acciones</Th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {displayedUsers.map((user, index) => (
+                      <tr key={user.id_usuario}>
+                        <Td>{index + 1}</Td>
+                        <Td>
+                          {[
+                            user.nombre,
+                            user.apellido_paterno,
+                            user.apellido_materno
+                          ]
+                          .filter(Boolean) // Esto elimina valores null/undefined/empty
+                          .join(' ')}
+                        </Td>
+                        <Td>{user.correo}</Td>
+                        <Td>
+                          {user.id_rol === 1 ? (
+                            <span style={{ color: '#e63946', fontWeight: 'bold' }}>Administrador</span>
+                          ) : (
+                            <span>Usuario</span>
+                          )}
+                        </Td>
+                        <Td>
+                          <Button className="danger" onClick={() => confirmDelete(user.id_usuario)}>
+                            <MdDelete /> Eliminar
+                          </Button>
+                        </Td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              {users.length > 10 && !showAllUsers && (
+                <div style={{ textAlign: 'center', margin: '1rem 0' }}>
+                  Mostrando 10 de {users.length} usuarios. 
+                  <Button 
+                    onClick={() => setShowAllUsers(true)}
+                    style={{ marginLeft: '0.5rem' }}
+                    className="primary"
+                  >
+                    Mostrar todos
+                  </Button>
+                </div>
+              )}
+
+              {showAllUsers && users.length > 50 && (
+                <div style={{ textAlign: 'center', margin: '1rem 0', color: '#666' }}>
+                  Mostrando los 50 usuarios más recientes de {users.length} totales
+                </div>
+              )}
+            </>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '2rem' }}>
+              No hay usuarios registrados
+            </div>
+          )}
+        </>
+      )}
 
       {/* Modal */}
       <ModalOverlay className={showModal ? 'active' : ''}>

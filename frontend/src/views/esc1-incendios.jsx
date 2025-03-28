@@ -172,79 +172,86 @@ const EscenarioIncendios1 = () => {
 }, [escenario]);
 
 
-  const handleNextScenario = () => {
-    console.log("handleNextScenario ejecutado");
-    console.log("hasNext:", hasNext);
-    console.log("timeUp:", timeUp);
-  
-    if (hasNext === false) {
-      console.log("No hay más escenarios, mostrando resultados");
-      setShowResults(true);
-      setSelectedOption(null);
-      setTimeUp(false);
-      setTimerRunning(false);
-    } else if (hasNext === true) {
-      console.log("Navegando al siguiente escenario");
-      setSelectedOption(null);
-      setTimeUp(false);
-      setTimeLeft(10);
-      setTimerRunning(true);
-  
-      if (soundEnabled) {
-        tickAudio.current.play().catch((err) => console.warn("Error al reproducir sonido:", err));
-      }
-  
-      navigate(`/escenarios/${id_catalogo}/${parseInt(id_escenario) + 1}`);
-    }else {
-      console.error("hasNext es undefined o null");
-    }
-  };
+const handleNextScenario = async () => {
+  console.log("handleNextScenario ejecutado");
+  console.log("hasNext:", hasNext);
+  console.log("timeUp:", timeUp);
 
-  const handleOptionSelect = async (opcion) => {
-    setSelectedOption(opcion);
-    setTimerRunning(false);
-    setTimeUp(false); // Restablecer timeUp al seleccionar una opción
-    tickAudio.current.pause();
-    tickAudio.current.currentTime = 0;
-  
-    if (opcion.solucion) {
-      setCorrectAnswers((prev) => prev + 1);
-    } else {
-      setIncorrectAnswers((prev) => prev + 1);
-    }
-  
-    try {
-      // Obtener el userId desde localStorage
-      const userId = localStorage.getItem("userId");
-  
-      const response = await fetch("http://localhost:5000/api/guardar-respuesta", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: userId, // Enviar el userId del usuario autenticado
-          id_escenario: id_escenario,
-          id_opcion: opcion.id_opcion,
-          respuesta_automatica: false, // No es una respuesta automática
-        }),
-      });
-  
+  // Verificar si hay más escenarios en el mismo catálogo
+  try {
+    const response = await fetch(`http://localhost:5000/escenarios/${id_catalogo}/${parseInt(id_escenario) + 1}`);
+    
+    if (response.ok) {
       const data = await response.json();
-      console.log("Respuesta del servidor:", data); // Inspecciona la respuesta
-
-    if (data.success) {
-      console.log("Respuesta guardada correctamente");
-      setHasNext(data.hasNext ?? false); // Si data.hasNext es undefined, usa false
-    } else {
-      console.error("Error al guardar la respuesta");
-      setHasNext(false); // Si hay un error, asume que no hay más escenarios
+      if (data.escenario) {
+        console.log("Navegando al siguiente escenario");
+        setSelectedOption(null);
+        setTimeUp(false);
+        setTimeLeft(10);
+        setTimerRunning(true);
+        
+        if (soundEnabled) {
+          tickAudio.current.play().catch((err) => console.warn("Error al reproducir sonido:", err));
+        }
+        
+        navigate(`/escenarios/${id_catalogo}/${parseInt(id_escenario) + 1}`);
+        return;
+      }
     }
+    
+    // Si no hay más escenarios
+    console.log("No hay más escenarios, mostrando resultados");
+    setShowResults(true);
+    setSelectedOption(null);
+    setTimeUp(false);
+    setTimerRunning(false);
+    
+  } catch (error) {
+    console.error("Error al verificar siguiente escenario:", error);
+    setShowResults(true);
+  }
+};
+
+const handleOptionSelect = async (opcion) => {
+  setSelectedOption(opcion);
+  setTimerRunning(false);
+  setTimeUp(false);
+  tickAudio.current.pause();
+  tickAudio.current.currentTime = 0;
+
+  if (opcion.solucion) {
+    setCorrectAnswers((prev) => prev + 1);
+  } else {
+    setIncorrectAnswers((prev) => prev + 1);
+  }
+
+  try {
+    const userId = localStorage.getItem("userId");
+    const response = await fetch("http://localhost:5000/api/guardar-respuesta", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userId: userId,
+        id_escenario: id_escenario,
+        id_opcion: opcion.id_opcion,
+        respuesta_automatica: false,
+      }),
+    });
+
+    const data = await response.json();
+    console.log("Respuesta del servidor:", data);
+    
+    // Verificar manualmente si hay siguiente escenario
+    const nextResponse = await fetch(`http://localhost:5000/escenarios/${id_catalogo}/${parseInt(id_escenario) + 1}`);
+    setHasNext(nextResponse.ok);
+    
   } catch (error) {
     console.error("Error al enviar la respuesta al servidor:", error);
-    setHasNext(false); // Si hay un error, asume que no hay más escenarios
+    setHasNext(false);
   }
-  };
+};
 
   const handleFinish = () => {
     navigate("/");

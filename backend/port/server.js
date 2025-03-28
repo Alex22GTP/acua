@@ -153,27 +153,42 @@ app.get("/escenarios/:id_catalogo/:id", async (req, res) => {
   const { id_catalogo, id } = req.params;
   console.log(`Solicitando escenario con id_catalogo: ${id_catalogo}, id_escenario: ${id}`);
 
-
   try {
+    // 1. Primero verificamos si el escenario existe
     const escenarioQuery = `
       SELECT e.id_escenario, e.titulo, e.descripcion, e.imagen
       FROM escenarios e
       WHERE e.id_escenario = $1 AND e.id_catalogo = $2
     `;
+    
+    const escenarioResult = await pool.query(escenarioQuery, [id, id_catalogo]);
+    
+    if (escenarioResult.rows.length === 0) {
+      console.error("Escenario no encontrado en la BD");
+      return res.status(404).json({ 
+        error: "Escenario no encontrado",
+        hasNext: false // Indicamos explícitamente que no hay más escenarios
+      });
+    }
+
+    // 2. Obtenemos las opciones del escenario
     const opcionesQuery = `
       SELECT o.id_opcion, o.descripcion, o.solucion, o.retroalimentacion
       FROM opciones o
       WHERE o.id_escenario = $1
+      ORDER BY o.id_opcion
     `;
-
-    const escenarioResult = await pool.query(escenarioQuery, [id, id_catalogo]);
-    console.log("Resultado de la consulta:", escenarioResult.rows);
     const opcionesResult = await pool.query(opcionesQuery, [id]);
 
-    if (escenarioResult.rows.length === 0) {
-      console.error("Escenario no encontrado en la BD");
-      return res.status(404).json({ error: "Escenario no encontrado" });
-    }
+    // 3. Verificamos si existe un siguiente escenario en el mismo catálogo
+    const nextEscenarioQuery = `
+      SELECT id_escenario 
+      FROM escenarios 
+      WHERE id_catalogo = $1 AND id_escenario > $2
+      ORDER BY id_escenario ASC 
+      LIMIT 1
+    `;
+    const nextEscenarioResult = await pool.query(nextEscenarioQuery, [id_catalogo, id]);
 
     // Convertir la imagen BYTEA a base64
     const imagenBase64 = escenarioResult.rows[0].imagen
@@ -186,15 +201,21 @@ app.get("/escenarios/:id_catalogo/:id", async (req, res) => {
         id_escenario: escenarioResult.rows[0].id_escenario,
         titulo: escenarioResult.rows[0].titulo,
         descripcion: escenarioResult.rows[0].descripcion,
-        imagen: imagenBase64 ? `data:image/png;base64,${imagenBase64}` : null, // Devuelve la imagen como data URL
+        imagen: imagenBase64 ? `data:image/png;base64,${imagenBase64}` : null,
       },
       opciones: opcionesResult.rows,
+      hasNext: nextEscenarioResult.rows.length > 0 // Indicamos si hay más escenarios
     };
 
+    console.log("Escenario encontrado, hasNext:", response.hasNext);
     res.json(response);
+    
   } catch (error) {
     console.error("Error al obtener el escenario:", error);
-    res.status(500).json({ error: "Error del servidor" });
+    res.status(500).json({ 
+      error: "Error del servidor",
+      hasNext: false // Por seguridad, asumimos que no hay más escenarios si hay error
+    });
   }
 });
 

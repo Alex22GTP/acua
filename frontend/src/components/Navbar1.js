@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import { MdAccountCircle, MdLogout, MdManageAccounts, MdMenu, MdClose, MdBarChart, MdHome, MdSecurity, MdHelp } from "react-icons/md";
+import { MdAccountCircle, MdLogout, MdManageAccounts, MdMenu, MdClose, MdBarChart, MdHome} from "react-icons/md";
 import { Link as RouterLink, useNavigate, useLocation  } from "react-router-dom";
 import { motion } from "framer-motion";
 import logo from "../img/logoss.png";
@@ -344,12 +344,7 @@ function Navbar() {
                   <MdHome /> Inicio
                 </MobileMenuItem>
       
-                <MobileMenuItem 
-                  onClick={() => { navigate("/estadistica"); setSidebarOpen(false); }}
-                  active={location.pathname === '/estadistica'}
-                >
-                  <MdBarChart /> Estadísticas
-                </MobileMenuItem>
+        
       
                 {isLoggedIn && (
                   <>
@@ -360,14 +355,13 @@ function Navbar() {
                     >
                       <MdManageAccounts /> Mi Perfil
                     </MobileMenuItem>
-                    
                     <MobileMenuItem 
-                      onClick={() => { navigate("/seguridad"); setSidebarOpen(false); }}
-                      active={location.pathname === '/seguridad'}
-                    >
-                      <MdSecurity /> Seguridad
-                    </MobileMenuItem>
-                  
+                  onClick={() => { navigate("/estadistica"); setSidebarOpen(false); }}
+                  active={location.pathname === '/estadistica'}
+                >
+                  <MdBarChart /> Estadísticas
+                </MobileMenuItem>
+                
                   </>
                 )}
       

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import { MdAccountCircle, MdSettings, MdLogout,MdImage, MdHelp, MdManageAccounts, MdSecurity, MdMenu, MdClose, MdBarChart, MdHome } from "react-icons/md";
+import { MdAccountCircle, MdSettings, MdLogout,MdImage, MdHelp, MdManageAccounts, MdMenu, MdClose, MdBarChart, MdHome } from "react-icons/md";
 import { Link as ScrollLink } from "react-scroll";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -104,7 +104,7 @@ const LogoText = styled.span`
 const IconsContainer = styled.div`
   display: flex;
   gap: 1rem;
-  margin-right: 1.5rem;
+  margin-right: 3.5rem;
 
   @media (max-width: 768px) {
     display: none;
@@ -124,7 +124,7 @@ const IconButton = styled.button`
   color: ${({ scrolled }) => (scrolled ? "#a8dadc" : "#1d3557")};
   display: flex; /* Añadir display flex */
   align-items: center; /* Alinear verticalmente */
-  gap: 0.5rem; /* Espacio entre el ícono y el nombre */
+  gap: 0.7rem; /* Espacio entre el ícono y el nombre */
 
   &:hover {
     transform: scale(1.3);
@@ -410,15 +410,7 @@ function Navbar() {
             </DropdownMenu>
               </IconWrapper>
 
-              <IconWrapper>
-                <IconButton scrolled={scrolled} onClick={() => toggleMenu("settings")}>
-                  <MdSettings />
-                </IconButton>
-                <DropdownMenu isOpen={activeMenu === "settings"} scrolled={scrolled}>
-                  <DropdownItem scrolled={scrolled}><MdSecurity /> Seguridad</DropdownItem>
-                  <DropdownItem scrolled={scrolled}><MdHelp /> Soporte</DropdownItem>
-                </DropdownMenu>
-              </IconWrapper>
+            
             </>
           )}
         </IconsContainer>
@@ -501,20 +493,8 @@ function Navbar() {
             <MdManageAccounts /> Perfil
           </MobileMenuItem>
           
-          <MobileMenuItem style={{ padding: '0.75rem 1rem' }} onClick={() => { navigate("/estadistica"); setSidebarOpen(false); }}>
-            <MdBarChart /> Estadísticas
-          </MobileMenuItem>
-
-          <MobileSubmenuHeader style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>CONFIGURACIÓN</MobileSubmenuHeader>
-          
-          <MobileMenuItem style={{ padding: '0.75rem 1rem' }} onClick={() => { navigate("/seguridad"); setSidebarOpen(false); }}>
-            <MdSecurity /> Seguridad
-          </MobileMenuItem>
-          
-          <MobileMenuItem style={{ padding: '0.75rem 1rem' }} onClick={() => { navigate("/soporte"); setSidebarOpen(false); }}>
-            <MdHelp /> Soporte
-          </MobileMenuItem>
-          
+      
+       
           <MobileMenuItem style={{ padding: '0.75rem 1rem' }} onClick={handleLogout}>
             <MdLogout /> Cerrar Sesión
           </MobileMenuItem>
